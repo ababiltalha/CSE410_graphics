@@ -2,18 +2,40 @@
 #include<GL/glut.h>
 #include<math.h>
 #include<ctime>
+#include <chrono>
 
 #define PI acos(-1.0)
 #define degToRad(x) (x * PI / 180.0)
+#define GRAVITY 9.8/1000000
 
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 640
 
-using namespace std;
-
 typedef struct {
     double x, y;
 } Point;
+
+Point pendulumBase = {0, -0.2};
+double pendulumLength = 0.2;
+Point pendulumCenter;
+double pendulumRadius = 0.1;
+
+double pendulumTheta = 30;
+double pendulumAngularVelocity = 0;
+double pendulumAngularAcceleration = -GRAVITY*sin(degToRad(pendulumTheta))/pendulumLength ;
+
+
+using namespace std;
+
+long long getCurrentTimeMilliseconds() {
+    auto currentTime = std::chrono::system_clock::now();
+    auto duration = currentTime.time_since_epoch();
+    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+    auto remainder = std::chrono::duration_cast<std::chrono::milliseconds>(milliseconds) % 1000;
+    return remainder.count();
+}
+
+
 
 // Point clockCenter = {0, 0};
 
@@ -55,9 +77,13 @@ void drawLine(Point a, double length, double theta, double width=5){
 
 void drawClockDial(Point clockCenter){
     double clockRadius = 0.5;
+    glColor3f(0.0, 1.0, 1.0);
     drawCircle(clockCenter, clockRadius);
+    glColor3f(0.0, 0.8, 0.8);
     drawCircle(clockCenter, clockRadius*0.75);
+    glColor3f(0.0, 0.3, 0.3);
     drawPoint(clockCenter);
+    glColor3f(1.0, 1.0, 1.0);
     // show clock marks
     for(int i=0; i<60; i++){
         double theta= degToRad((double)i*6);
@@ -65,6 +91,7 @@ void drawClockDial(Point clockCenter){
         double y= (clockRadius*0.9) * sin(theta);
         int markerSize= 1;
         if(i%5==0) markerSize= 2;
+        // glColor3f(0.0, 0.0, 1.0);
         drawPoint({x+clockCenter.x, y+clockCenter.y}, markerSize);
     }
 
@@ -95,13 +122,18 @@ void drawClock(double hour, double minute, double second){
 
 //! draw pendulum
 void drawPendulum(){
-    Point pendulumCenter = {0, -0.2};
-    double pendulumRadius = 0.1;
-    // drawLine({pendulumCenter.x, pendulumCenter.y-pendulumRadius}, {pendulumCenter.x, pendulumCenter.y-0.8});
+    pendulumAngularAcceleration = -GRAVITY*sin(degToRad(pendulumTheta))/pendulumLength ;
+    pendulumAngularVelocity += pendulumAngularAcceleration;
+    pendulumTheta += pendulumAngularVelocity;
+
+    pendulumCenter = {pendulumBase.x+(pendulumLength+pendulumRadius)*sin(degToRad(pendulumTheta)), 
+        pendulumBase.y-(pendulumLength+pendulumRadius)*cos(degToRad(pendulumTheta))};
+    
+    // drawLine(pendulumBase, pendulumCenter);
+    drawLine(pendulumBase, pendulumLength, 270+pendulumTheta);
+    drawCircle(pendulumCenter, pendulumRadius);
+    cout << pendulumAngularAcceleration << endl;
 }
-
-//! draw pendulum
-
 
 void display(){
     glClear(GL_COLOR_BUFFER_BIT);
@@ -124,6 +156,8 @@ void idle(){
 
 
 int main(int argc, char** argv){
+    // start_time= getCurrentTimeMilliseconds();
+
     glutInit(&argc, argv);
     glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);  
     glutInitWindowPosition(0, 0);
