@@ -14,8 +14,7 @@
 #define CYLINDER_ANGLE 70.5287794
 
 
-typedef struct
-{
+typedef struct {
     GLdouble x, y, z;
 } Point;
 
@@ -26,14 +25,14 @@ Point rightDir; // r
 Point upDir;    // u
 Point center;
 
-const double Vertex_dec = 1.0/24;
-const double Vertex_inc = 1.0/48;
-const double OneBy3 = 0.333333;
-const double OneByRoot3 = 0.57735026919;
 const double OneByRoot2 = 1.0 / (sqrt(2));
 
 bool isAxes = true;
 bool isFillTriangle = true;
+bool isOctahedron = true;
+bool isSphere = true;
+bool isCylinder = true;
+
 bool colorToggle = false;
 
 // Vertices of front facing triangle
@@ -41,8 +40,9 @@ Point vx;
 Point vy;
 Point vz;
 
-double sphereRadius = 0;
-double objectRotation = 0;
+double sphereRadius;
+double objectRotationHorAngle;
+double objectRotationVerAngle;
 
 using namespace std;
 
@@ -52,35 +52,18 @@ void initGL()
     glEnable(GL_DEPTH_TEST);              // Enable depth testing for z-culling
 }
 
-void colorBlue()
-{
-    glColor3f(0.0f, 0.0f, 1.0f); // Blue
-}
+// color functions
+void colorBlue() {glColor3f(0.0f, 0.0f, 1.0f);} // Blue
 
-void colorRed()
-{
-    glColor3f(1.0f, 0.0f, 0.0f); // Red
-}
+void colorRed() {glColor3f(1.0f, 0.0f, 0.0f);} // Red
 
-void colorGreen()
-{
-    glColor3f(0.0f, 1.0f, 0.0f); // Green
-}
+void colorGreen() {glColor3f(0.0f, 1.0f, 0.0f);} // Green
 
-void colorCyan()
-{
-    glColor3f(0.0f, 1.0f, 1.0f); // Cyan
-}
+void colorCyan() {glColor3f(0.0f, 1.0f, 1.0f);} // Cyan
 
-void colorMagenta()
-{
-    glColor3f(1.0f, 0.0f, 1.0f); // Magenta
-}
+void colorMagenta() {glColor3f(1.0f, 0.0f, 1.0f);} // Magenta
 
-void colorYellow()
-{
-    glColor3f(1.0f, 1.0f, 0.0f); // Yellow
-}
+void colorYellow() {glColor3f(1.0f, 1.0f, 0.0f);} // Yellow
 
 void point(Point A)
 {
@@ -90,35 +73,21 @@ void point(Point A)
 void drawTriangle()
 {
     glPushMatrix();
-    double t = 1 - sqrt(2) * sphereRadius;
-    glTranslatef(sphereRadius/sqrt(3), sphereRadius/sqrt(3), sphereRadius/sqrt(3));
-    glScalef(t, t, t);
-    if (isFillTriangle) glBegin(GL_TRIANGLES);
-    else glBegin(GL_LINE_LOOP);
-    // Front
-    // colorBlue();
-    point(vx);
-    // colorRed();
-    point(vy);
-    // colorGreen();
-    point(vz);
-    glEnd();
+        double scaleFactor = 1 - sqrt(2) * sphereRadius;
+        double translateFactor = 1/sqrt(3) * sphereRadius;
+        glTranslatef(translateFactor, translateFactor, translateFactor);
+        // glTranslatef(sphereRadius/sqrt(3), sphereRadius/sqrt(3), sphereRadius/sqrt(3));
+        glScalef(scaleFactor, scaleFactor, scaleFactor);
+        if (isFillTriangle) glBegin(GL_TRIANGLES);
+        else glBegin(GL_LINE_LOOP);
+        point(vx);
+        point(vy);
+        point(vz);
+        glEnd();
     glPopMatrix();
 }
 
-// void drawLineTriangle()
-// {
-//     glBegin(GL_LINE_LOOP);
-//     // Front
-//     colorBlue();
-//     point(vx);
-//     colorRed();
-//     point(vy);
-//     colorGreen();
-//     point(vz);
-//     glEnd();
-// }
-
+// https://www.songho.ca/opengl/gl_sphere.html
 vector<vector<Point>> buildUnitPositiveX(int subdivision)
 {
     const float DEG2RAD = acos(-1) / 180.0f;
@@ -182,78 +151,68 @@ void drawSphereSegment()
     glScalef(sphereRadius, sphereRadius, sphereRadius); 
     for (int i = 0; i < pointsPerRow - 1; i++)
     {
-        // glColor3f(1.0f, 1.0f, 1.0f);
         glBegin(GL_QUADS);
         for (int j = 0; j < pointsPerRow - 1; j++)
         {
-            // glVertex3f(vertices[index], vertices[index + 1], vertices[index + 2]);
-            // glVertex3f(vertices[index + 3], vertices[index + 4], vertices[index + 5]);
-            // glVertex3f(vertices[index + 3 + pointsPerRow * 3], vertices[index + 4 + pointsPerRow * 3], vertices[index + 5 + pointsPerRow * 3]);
-            // glVertex3f(vertices[index + pointsPerRow * 3], vertices[index + 1 + pointsPerRow * 3], vertices[index + 2 + pointsPerRow * 3]);
-            glPushMatrix();
             point(vertices[i][j]); 
             point(vertices[i][j + 1]);
             point(vertices[i + 1][j + 1]);
             point(vertices[i + 1][j]);
-            glPopMatrix();
         }
         glEnd();
     }
 }
 
 void drawAllSegmentsSphere(){
-    double t = 1 - sqrt(2) * sphereRadius;
-    double translateFactor[4][3] = {{t, 0, 0}, {0, 0, -t}, {-t, 0, 0}, {0, 0, t}};
+    double dist = 1 - sqrt(2) * sphereRadius;
+    double translateFactor[4][3] = {{dist, 0, 0}, {0, 0, -dist}, {-dist, 0, 0}, {0, 0, dist}};
 
     for (int i = 0; i < 4; i++) {
         if (i%2 == 0) colorRed();
         else colorBlue();
         glPushMatrix();
-        glTranslatef(translateFactor[i][0], translateFactor[i][1], translateFactor[i][2]);
-        glRotatef(i * 90, 0, 1, 0);
-        drawSphereSegment();
+            glTranslatef(translateFactor[i][0], translateFactor[i][1], translateFactor[i][2]);
+            glRotatef(i * 90, 0, 1, 0);
+            drawSphereSegment();
         glPopMatrix();
     }
 
     colorGreen();  
+
     glPushMatrix();
-    glTranslatef(0, t, 0);
-    glRotatef(90, 0, 0, 1);
-    drawSphereSegment();
+        glTranslatef(0, dist, 0);
+        glRotatef(90, 0, 0, 1);
+        drawSphereSegment();
     glPopMatrix();
 
     glPushMatrix();
-    glTranslatef(0, -t, 0);
-    glRotatef(-90, 0, 0, 1);
-    drawSphereSegment();
+        glTranslatef(0, -dist, 0);
+        glRotatef(-90, 0, 0, 1);
+        drawSphereSegment();
     glPopMatrix();
 
 }
 
 void drawPyramid()
 {
-    // double t = 1 - sqrt(2) * sphereRadius;
-    // glPushMatrix();
-    // glScalef(t, t, t);
     for (int i = 0; i < 4; i++)
     {
         glPushMatrix();
-        if (colorToggle) colorCyan();
-        else colorMagenta();
-        glRotatef(i * 90, 0, 1, 0);
-        drawTriangle();
+            if (colorToggle) colorCyan();
+            else colorMagenta();
+            glRotatef(i * 90, 0, 1, 0);
+            drawTriangle();
         glPopMatrix();
         colorToggle = !colorToggle;
     }
-    // glPopMatrix();
 }
 
 void drawOctahedron()
 {
     drawPyramid();
     glPushMatrix();
-    glRotatef(180, 1, 0, 0);
-    drawPyramid();
+        glRotatef(180, 1, 0, 0);
+        drawPyramid();
     glPopMatrix();
 }
 
@@ -262,20 +221,19 @@ void drawCylinderSegment(float angle, float radius, float height) {
     const float segmentAngle = angle * 3.1415f / 180.0f;
 
     glPushMatrix();
-    glTranslatef(0.0f, -height/2, 0.0f);
-    glRotatef(angle/2, 0.0f, 1.0f, 0.0f);
-    glBegin(GL_TRIANGLE_STRIP);
-    for (int i = 0; i <= numSegments; ++i) {
-        float theta = i * segmentAngle / numSegments;
+        glTranslatef(0.0f, -height/2, 0.0f);
+        glRotatef(angle/2, 0.0f, 1.0f, 0.0f);
+        glBegin(GL_TRIANGLE_STRIP);
+        for (int i = 0; i <= numSegments; ++i) {
+            float theta = i * segmentAngle / numSegments;
 
+            float x = radius*cos(theta);
+            float z = radius*sin(theta);
 
-        float x = radius*cos(theta);
-        float z = radius*sin(theta);
-
-        glVertex3f(x, 0.0f, z);
-        glVertex3f(x, height*1.0f, z);
-    }
-    glEnd();
+            glVertex3f(x, 0.0f, z);
+            glVertex3f(x, height*1.0f, z);
+        }
+        glEnd();
     glPopMatrix();
 }
 
@@ -342,7 +300,7 @@ void drawAxes(int length)
 }
 
 void resetScene(){
-// Set up the camera
+    // Set up the camera
     eyePos = {2, 2, 2};     // pos
     lookDir = {-2, -2, -2}; // l
     upDir = {0, 1, 0};      // u
@@ -354,6 +312,12 @@ void resetScene(){
     vx = {1, 0, 0};
     vy = {0, 1, 0};
     vz = {0, 0, 1};
+
+    // Initial sphere radius (starts from zero)
+    sphereRadius = 0;
+    // Initial object rotation angle (no rotation without input)
+    objectRotationHorAngle = 0;
+    objectRotationVerAngle = 0;
 }
 
 //! display()
@@ -376,11 +340,16 @@ void display()
               upDir.x, upDir.y, upDir.z);
     // draw
     glPushMatrix();
-        glRotatef(objectRotation, upDir.x, upDir.y, upDir.z);
-        if (isAxes) drawAxes(2);
-        drawOctahedron();
-        drawAllSegmentsSphere();
-        drawAllSegmentsCylinder();
+        // glRotatef(objectRotationHorAngle, upDir.x, upDir.y, upDir.z);
+        glRotatef(objectRotationHorAngle, 0, 1, 0);
+        // glRotatef(objectRotationVerAngle, rightDir.x, rightDir.y, rightDir.z);
+        glPushMatrix();
+            // glRotatef(objectRotationVerAngle, 1, 0, -1);
+            if (isAxes)         drawAxes(2);
+            if (isOctahedron)   drawOctahedron();
+            if (isSphere)       drawAllSegmentsSphere();
+            if (isCylinder)     drawAllSegmentsCylinder();
+        glPopMatrix();
     glPopMatrix();
     glutSwapBuffers(); // Render now
 }
@@ -388,7 +357,8 @@ void display()
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int xx, int yy)
 {
-    double rate = degToRad(2);
+    double rateDeg = 5;
+    double rate = degToRad(rateDeg);
     double s, v = 0.01;
     switch (key){
 
@@ -453,22 +423,19 @@ void keyboardListener(unsigned char key, int xx, int yy)
         break;
 
     case 'a':
-        objectRotation += 2;
-        // eyePos.x += (upDir.y * lookDir.z) * v;
-        // eyePos.z += (-lookDir.x *upDir.y) * v;
-        // s = sqrt(eyePos.x * eyePos.x + eyePos.z * eyePos.z) / (4 * sqrt(2));
-        // eyePos.x /= s;
-        // eyePos.z /= s;
-        
+        objectRotationHorAngle += rateDeg;
         break;
 
     case 'd':
-        objectRotation -= 2;
-        // eyePos.x += (-upDir.y * lookDir.z) * v;
-        // eyePos.z += (lookDir.x * upDir.y) * v;
-        // s = sqrt(eyePos.x * eyePos.x + eyePos.z * eyePos.z) / (4 * sqrt(2));
-        // eyePos.x /= s;
-        // eyePos.z /= s;
+        objectRotationHorAngle -= rateDeg;
+        break;
+
+    case 'w':
+        objectRotationVerAngle += rateDeg;
+        break;
+
+    case 's':
+        objectRotationVerAngle -= rateDeg;
         break;
 
     case 'r':
@@ -478,42 +445,37 @@ void keyboardListener(unsigned char key, int xx, int yy)
     case 'f':
         isFillTriangle = !isFillTriangle;
         break;
+
+    case 'g':
+        isOctahedron = !isOctahedron;
+        break;
+    
+    case 'h':
+        isSphere = !isSphere;
+        break;
+    
+    case 'j':
+        isCylinder = !isCylinder;
+        break;
     
     case 'x':
         isAxes = !isAxes;
         break;
 
-    case ',': // shrink to 1/3
-        // if (vx.x <= OneBy3 || vy.y <= OneBy3 || vz.z <= OneBy3)
-        //     break;
-        // if (vx.y >= OneBy3 || vx.z >= OneBy3 || vy.x >= OneBy3 || vy.z >= OneBy3 || vz.x >= OneBy3 || vz.y >= OneBy3)
-        //     break;
-        // vx.x -= Vertex_dec; vx.y += Vertex_inc; vx.z += Vertex_inc;
-        // vy.x += Vertex_inc; vy.y -= Vertex_dec; vy.z += Vertex_inc;
-        // vz.x += Vertex_inc; vz.y += Vertex_inc; vz.z -= Vertex_dec;
-
-        sphereRadius += 1.0 / (sqrt(2.0) * 16);
-        if(sphereRadius > 1.0/sqrt(2.0))
-            sphereRadius = 1.0/sqrt(2.0);
+    case ',': 
+        sphereRadius += OneByRoot2/16.0;
+        if(sphereRadius > OneByRoot2) sphereRadius = OneByRoot2;
         break;
     
-    case '.': // enlarge from 1/3
-        // if (vx.x >= 1 || vy.y >= 1 || vz.z >= 1)
-        //     break;
-        // if (vx.y <= 0 || vx.z <= 0 || vy.x <= 0 || vy.z <= 0 || vz.x <= 0 || vz.y <= 0)
-        //     break;
-        // vx.x += Vertex_dec; vx.y -= Vertex_inc; vx.z -= Vertex_inc;
-        // vy.x -= Vertex_inc; vy.y += Vertex_dec; vy.z -= Vertex_inc;
-        // vz.x -= Vertex_inc; vz.y -= Vertex_inc; vz.z += Vertex_dec;
-
-        sphereRadius -= 1.0 / (sqrt(2.0) * 16);
-        if(sphereRadius < 0)
-            sphereRadius = 0;
+    case '.': 
+        sphereRadius -= OneByRoot2/16.0;
+        if(sphereRadius < 0) sphereRadius = 0;
         break; 
 
     default:
         return;
     }
+
     glutPostRedisplay();
 }
 
@@ -590,18 +552,7 @@ void reshapeListener(GLsizei width, GLsizei height)
 
 int main(int argc, char **argv)
 {
-    // Set up the camera
-    eyePos = {2, 2, 2};     // pos
-    lookDir = {-2, -2, -2}; // l
-    upDir = {0, 1, 0};      // u
-    rightDir = {upDir.z * (lookDir.y - eyePos.y) - upDir.y * (lookDir.z - eyePos.z), 
-                upDir.x * (lookDir.z - eyePos.z) - upDir.z * (lookDir.x - eyePos.x), 
-                upDir.y * (lookDir.x - eyePos.x) - upDir.x * (lookDir.y - eyePos.y)}; // r, cross product of l and u
-
-    // Initial vertices of triangle
-    vx = {1, 0, 0};
-    vy = {0, 1, 0};
-    vz = {0, 0, 1};
+    resetScene(); // initial position
 
     glutInit(&argc, argv);
     glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);

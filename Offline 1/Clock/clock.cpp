@@ -6,7 +6,8 @@
 
 #define PI acos(-1.0)
 #define degToRad(x) (x * PI / 180.0)
-#define GRAVITY 9.8/1000000
+#define radToDeg(x) (x * 180.0 / PI)
+#define GRAVITY 9.8
 
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 640
@@ -16,31 +17,16 @@ typedef struct {
 } Point;
 
 Point pendulumBase = {0, -0.2};
-double pendulumLength = 0.2;
+double pendulumLength = 0.5;
 Point pendulumCenter;
 double pendulumRadius = 0.1;
 
-const double pendulumThetaMax = 30;
-double pendulumTheta;
-// double pendulumAngularVelocity = 0;
-// double pendulumAngularAcceleration = -GRAVITY*sin(degToRad(pendulumTheta))/pendulumLength ;
+double pendulumTheta = 30;
+double pendulumOmega = 0;
 
-double global_t = 0;
-double global_t_inc = 0.001;
+bool nightMode = true;
 
 using namespace std;
-
-long long getCurrentTimeMilliseconds() {
-    auto currentTime = std::chrono::system_clock::now();
-    auto duration = currentTime.time_since_epoch();
-    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-    auto remainder = std::chrono::duration_cast<std::chrono::milliseconds>(milliseconds) % 1000;
-    return remainder.count();
-}
-
-
-
-// Point clockCenter = {0, 0};
 
 void drawPoint(Point p, double size=5){
     glPointSize(size);
@@ -51,7 +37,7 @@ void drawPoint(Point p, double size=5){
 
 void drawCircle(Point center, double radius, double width=5){
     glLineWidth(width);
-    glBegin(GL_LINE_LOOP);
+    glBegin(GL_POLYGON);
     for(int i=0; i<360; i++){
         double theta= degToRad((double)i);
         double x= radius * cos(theta);
@@ -80,20 +66,24 @@ void drawLine(Point a, double length, double theta, double width=5){
 
 void drawClockDial(Point clockCenter){
     double clockRadius = 0.5;
-    glColor3f(0.0, 1.0, 1.0);
+    if (nightMode) glColor3f(0.0, 0.502, 0.502);
+    else glColor3f(0.9, 0.647, 0.0);
     drawCircle(clockCenter, clockRadius);
-    glColor3f(0.0, 0.8, 0.8);
+    if (nightMode) glColor3f(0.0, 0.251, 0.251);
+    else glColor3f(0.4, 0.243, 0.0);
     drawCircle(clockCenter, clockRadius*0.75);
-    glColor3f(0.0, 0.3, 0.3);
-    drawPoint(clockCenter);
-    glColor3f(1.0, 1.0, 1.0);
+    // if (nightMode) glColor3f(0.0, 0.502, 0.502);
+    // else glColor3f(1.0, 0.647, 0.0);
+    // drawPoint(clockCenter, 15);
+    if (nightMode) glColor3f(0.0, 1.0, 1.0);
+    else glColor3f(1.0, 1.0, 0.0);
     // show clock marks
     for(int i=0; i<60; i++){
         double theta= degToRad((double)i*6);
         double x= (clockRadius*0.9) * cos(theta);
         double y= (clockRadius*0.9) * sin(theta);
-        int markerSize= 1;
-        if(i%5==0) markerSize= 2;
+        int markerSize= 2;
+        if(i%5==0) markerSize= 4;
         // glColor3f(0.0, 0.0, 1.0);
         drawPoint({x+clockCenter.x, y+clockCenter.y}, markerSize);
     }
@@ -107,6 +97,8 @@ void drawClockHands(Point clockCenter, double hDeg, double mDeg, double sDeg){
     double hourHandWidth = 5;
     double minuteHandWidth = 3;
     double secondHandWidth = 1;
+    if (nightMode) glColor3f(0.0, 0.502, 0.502);
+    else glColor3f(0.90, 0.647, 0.0);
     drawLine(clockCenter, hourHandLength, hDeg, hourHandWidth);
     drawLine(clockCenter, minuteHandLength, mDeg, minuteHandWidth);
     drawLine(clockCenter, secondHandLength, sDeg, secondHandWidth);
@@ -123,24 +115,23 @@ void drawClock(double hour, double minute, double second){
     drawClockHands(clockCenter, hDeg, mDeg, sDeg);
 }
 
-//! draw pendulum fix it
 void drawPendulum(){
-    pendulumTheta = pendulumThetaMax*cos(global_t);
-    global_t += global_t_inc;
-    // pendulumAngularAcceleration = -GRAVITY*sin(degToRad(pendulumTheta))/pendulumLength ;
-    // pendulumAngularVelocity += pendulumAngularAcceleration;
-    // pendulumTheta += pendulumAngularVelocity;
-
-    pendulumCenter = {pendulumBase.x+(pendulumLength+pendulumRadius)*sin(degToRad(pendulumTheta)), 
-        pendulumBase.y-(pendulumLength+pendulumRadius)*cos(degToRad(pendulumTheta))};
+    pendulumCenter = {pendulumBase.x + (pendulumLength+pendulumRadius) * sin(degToRad(pendulumTheta)), 
+        pendulumBase.y - (pendulumLength+pendulumRadius) * cos(degToRad(pendulumTheta))};
     
-    drawLine(pendulumBase, pendulumLength, 270+pendulumTheta);
+    if (nightMode) glColor3f(0.0, 0.626, 0.626);
+    else glColor3f(1.0, 0.864, 0.0);
+    drawLine(pendulumBase, pendulumCenter);
+    if (nightMode) glColor3f(0.0, 0.502, 0.502);
+    else glColor3f(0.90, 0.647, 0.0);
     drawCircle(pendulumCenter, pendulumRadius);
-    // cout << pendulumAngularAcceleration << endl;
+    // cout << pendulumOmega << endl;
 }
 
 void display(){
     glClear(GL_COLOR_BUFFER_BIT);
+    if (nightMode) glClearColor(0.0f, 0.1f, 0.1f, 0.1f);
+    else glClearColor(0.5f, 0.2f, 0.2f, 0.9f);
     
     time_t currentTime = time(nullptr);
     tm* localTime = localtime(&currentTime);
@@ -155,19 +146,47 @@ void display(){
 }
 
 void idle(){
+    // Calculate time elapsed since the last frame
+    static double previousTime = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
+    double currentTime = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
+    double deltaTime = currentTime - previousTime;
+
+    // Update the pendulum
+    // updatePendulum(deltaTime);
+    double angularAcceleration = -GRAVITY / pendulumLength * sin(degToRad(pendulumTheta));
+    pendulumOmega += angularAcceleration * deltaTime;
+    pendulumTheta += radToDeg(pendulumOmega * deltaTime);
+
+    // Update the previous time
+    previousTime = currentTime;
+
     glutPostRedisplay();
 }
 
+/* Callback handler for normal-key event */
+void keyboardListener(unsigned char key, int xx, int yy)
+{
+    switch (key){
+
+    case 'a': 
+        nightMode = !nightMode;
+        break;
+
+    default:
+        return;
+    }
+
+    glutPostRedisplay();
+}
 
 int main(int argc, char** argv){
-    // start_time= getCurrentTimeMilliseconds();
-
     glutInit(&argc, argv);
     glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);  
     glutInitWindowPosition(0, 0);
     glutCreateWindow("It's Clockin' Time");
     glutDisplayFunc(display);
     glutIdleFunc(idle);
+    glutKeyboardFunc(keyboardListener);
 
     glutMainLoop();
     return 0;
