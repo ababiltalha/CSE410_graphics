@@ -42,6 +42,7 @@ Point vy;
 Point vz;
 
 double sphereRadius = 0;
+double objectRotation = 0;
 
 using namespace std;
 
@@ -285,7 +286,7 @@ void drawAllSegmentsCylinder(){
 
     colorYellow();
     
-    // 8 cylinder segments (45 degrees with respect to y axis)
+    // 8 cylinder segments (parralel to XY and YZ plane)
     for (int i = 0; i < 2; i++) {
         glPushMatrix();
             glRotatef(i * 180, 1, 0, 0);
@@ -301,8 +302,22 @@ void drawAllSegmentsCylinder(){
             }
         glPopMatrix();
     }   
-
     
+    // 4 cylinder segments (parallel to XZ plane)
+    for (int j = 0; j < 4; j++) {
+        glPushMatrix();
+            glRotatef(j * 90, 0, 1, 0);
+            glPushMatrix();
+                glRotatef(90, 1, 0, 0);
+                glPushMatrix();
+                    glTranslatef(t, t, 0);
+                    glRotatef(45, 0, 0, 1);
+                    drawCylinderSegment(CYLINDER_ANGLE, radius, height);
+                glPopMatrix();
+            glPopMatrix();
+        glPopMatrix();
+    }
+
 }
 
 void drawAxes(int length)
@@ -360,17 +375,20 @@ void display()
               center.x, center.y, center.z,
               upDir.x, upDir.y, upDir.z);
     // draw
-    if (isAxes) drawAxes(10);
-    drawOctahedron();
-    drawAllSegmentsSphere();
-    drawAllSegmentsCylinder();
+    glPushMatrix();
+        glRotatef(objectRotation, upDir.x, upDir.y, upDir.z);
+        if (isAxes) drawAxes(2);
+        drawOctahedron();
+        drawAllSegmentsSphere();
+        drawAllSegmentsCylinder();
+    glPopMatrix();
     glutSwapBuffers(); // Render now
 }
 
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int xx, int yy)
 {
-    double rate = degToRad(1);
+    double rate = degToRad(2);
     double s, v = 0.01;
     switch (key){
 
@@ -435,8 +453,9 @@ void keyboardListener(unsigned char key, int xx, int yy)
         break;
 
     case 'a':
-        eyePos.x += (upDir.y * lookDir.z) * v;
-        eyePos.z += (-lookDir.x *upDir.y) * v;
+        objectRotation += 2;
+        // eyePos.x += (upDir.y * lookDir.z) * v;
+        // eyePos.z += (-lookDir.x *upDir.y) * v;
         // s = sqrt(eyePos.x * eyePos.x + eyePos.z * eyePos.z) / (4 * sqrt(2));
         // eyePos.x /= s;
         // eyePos.z /= s;
@@ -444,8 +463,9 @@ void keyboardListener(unsigned char key, int xx, int yy)
         break;
 
     case 'd':
-        eyePos.x += (-upDir.y * lookDir.z) * v;
-        eyePos.z += (lookDir.x * upDir.y) * v;
+        objectRotation -= 2;
+        // eyePos.x += (-upDir.y * lookDir.z) * v;
+        // eyePos.z += (lookDir.x * upDir.y) * v;
         // s = sqrt(eyePos.x * eyePos.x + eyePos.z * eyePos.z) / (4 * sqrt(2));
         // eyePos.x /= s;
         // eyePos.z /= s;
