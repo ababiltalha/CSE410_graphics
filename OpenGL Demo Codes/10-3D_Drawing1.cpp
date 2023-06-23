@@ -121,6 +121,27 @@ void drawPyramid() {
     glEnd();   // Done drawing the pyramid
 }
 
+void drawCylinderSegment(float angle, float radius, float height) {
+    const int numSegments = 100;
+    const float segmentAngle = angle * 3.1415f / 180.0f;
+
+    glPushMatrix();
+    glRotatef(angle/2, 0.0f, 1.0f, 0.0f);
+    glBegin(GL_TRIANGLE_STRIP);
+    for (int i = 0; i <= numSegments; ++i) {
+        float theta = i * segmentAngle / numSegments;
+
+
+        float x = radius*cos(theta);
+        float z = radius*sin(theta);
+
+        glVertex3f(x, 0.0f, z);
+        glVertex3f(x, height*1.0f, z);
+    }
+    glEnd();
+    glPopMatrix();
+}
+
 /*  Handler for window-repaint event. Call back when the window first appears and
     whenever the window needs to be re-painted. */
 void display() {
@@ -140,6 +161,7 @@ void display() {
     if (isAxes) drawAxes();
     if (isCube) drawCube();
     if (isPyramid) drawPyramid();
+    drawCylinderSegment(70.0f, 0.2, sqrt(2)-2*0.2);
 
     glutSwapBuffers();  // Render now
 }

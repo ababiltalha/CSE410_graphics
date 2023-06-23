@@ -1,0 +1,7 @@
+eyePos.x = eyePos.x * cos(rate) + lookDir.x * sin(rate);
+eyePos.y = eyePos.y * cos(rate) + lookDir.y * sin(rate);
+eyePos.z = eyePos.z * cos(rate) + lookDir.z * sin(rate);
+
+lookDir.x = lookDir.x * cos(rate) - eyePos.x * sin(rate);
+lookDir.y = lookDir.y * cos(rate) - eyePos.y * sin(rate);
+lookDir.z = lookDir.z * cos(rate) - eyePos.z * sin(rate);
