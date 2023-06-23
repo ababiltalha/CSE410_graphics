@@ -1,6 +1,6 @@
 #define _USE_MATH_DEFINES
 
-#include <windows.h>  // for MS Windows
+// #include <windows.h>  // for MS Windows
 #include <GL/glut.h>  // GLUT, include glu.h and gl.h
 #include <cmath>
 
@@ -256,7 +256,9 @@ void display() {
               pos.x+l.x,pos.y+l.y,pos.z+l.z,
               u.x,u.y,u.z);
     // draw
-    drawSphere(5,100,100);
+    // drawSphere(5,100,100);
+    drawAxes();
+    drawCube();
 
     glutSwapBuffers();  // Render now
 }

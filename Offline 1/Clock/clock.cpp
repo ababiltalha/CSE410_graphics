@@ -20,10 +20,13 @@ double pendulumLength = 0.2;
 Point pendulumCenter;
 double pendulumRadius = 0.1;
 
-double pendulumTheta = 30;
-double pendulumAngularVelocity = 0;
-double pendulumAngularAcceleration = -GRAVITY*sin(degToRad(pendulumTheta))/pendulumLength ;
+const double pendulumThetaMax = 30;
+double pendulumTheta;
+// double pendulumAngularVelocity = 0;
+// double pendulumAngularAcceleration = -GRAVITY*sin(degToRad(pendulumTheta))/pendulumLength ;
 
+double global_t = 0;
+double global_t_inc = 0.001;
 
 using namespace std;
 
@@ -120,19 +123,20 @@ void drawClock(double hour, double minute, double second){
     drawClockHands(clockCenter, hDeg, mDeg, sDeg);
 }
 
-//! draw pendulum
+//! draw pendulum fix it
 void drawPendulum(){
-    pendulumAngularAcceleration = -GRAVITY*sin(degToRad(pendulumTheta))/pendulumLength ;
-    pendulumAngularVelocity += pendulumAngularAcceleration;
-    pendulumTheta += pendulumAngularVelocity;
+    pendulumTheta = pendulumThetaMax*cos(global_t);
+    global_t += global_t_inc;
+    // pendulumAngularAcceleration = -GRAVITY*sin(degToRad(pendulumTheta))/pendulumLength ;
+    // pendulumAngularVelocity += pendulumAngularAcceleration;
+    // pendulumTheta += pendulumAngularVelocity;
 
     pendulumCenter = {pendulumBase.x+(pendulumLength+pendulumRadius)*sin(degToRad(pendulumTheta)), 
         pendulumBase.y-(pendulumLength+pendulumRadius)*cos(degToRad(pendulumTheta))};
     
-    // drawLine(pendulumBase, pendulumCenter);
     drawLine(pendulumBase, pendulumLength, 270+pendulumTheta);
     drawCircle(pendulumCenter, pendulumRadius);
-    cout << pendulumAngularAcceleration << endl;
+    // cout << pendulumAngularAcceleration << endl;
 }
 
 void display(){
