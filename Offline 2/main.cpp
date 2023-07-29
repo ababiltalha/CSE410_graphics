@@ -9,7 +9,7 @@ int main() {
     // Stage 1
     // Modeling Transformation
 
-    ifstream input("Test Cases/1/scene.txt");
+    ifstream input("scene.txt");
     ofstream output("stage1.txt");
 
     Point eye;
