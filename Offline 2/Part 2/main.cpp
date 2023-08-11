@@ -6,7 +6,7 @@
 
 using namespace std;
 
-string inputFilePath = "Test Cases (Updated 2 Aug)/2/"; //! ""
+string inputFilePath = ""; // "Test Cases (Updated 2 Aug)/3/"; //! ""
 
 double getLeftIntersectingColumn(double y, const Triangle& t) {
     double minX = 9999;
