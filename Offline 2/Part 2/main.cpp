@@ -6,6 +6,8 @@
 
 using namespace std;
 
+string inputFilePath = "Test Cases (Updated 2 Aug)/2/"; //! ""
+
 double getLeftIntersectingColumn(double y, const Triangle& t) {
     double minX = 9999;
     double x1, x2, x3;
@@ -45,9 +47,6 @@ double getRightIntersectingColumn(double y, const Triangle& t) {
 }
 
 int main() {
-
-    string inputFilePath = "Test Cases (Updated 2 Aug)/1/"; //! ""
-
     // Stage 1
     // Modeling Transformation
 
@@ -236,8 +235,8 @@ int main() {
     double Bottom_Y = bottomLimit + dy/2.0;
     double Right_X = rightLimit - dx/2.0;
 
-    cout << dx << " " << dy << endl;
-    cout << Top_Y << " " << Left_X << " " << Bottom_Y << " " << Right_X << endl;
+    // cout << dx << " " << dy << endl;
+    // cout << Top_Y << " " << Left_X << " " << Bottom_Y << " " << Right_X << endl;
 
     double **zBuffer = new double*[screenHeight];
     for (int i = 0; i < screenHeight; i++) {
@@ -249,7 +248,7 @@ int main() {
 
     bitmap_image image(screenWidth, screenHeight);
     image.set_all_channels(0, 0, 0);
-    image.save_image("test.png");
+    // image.save_image("test.png");
 
     for (int i = 0; i < triangleCount; i++) {
         Triangle t = triangles[i];
@@ -257,48 +256,32 @@ int main() {
         Point v2 = t.v2;
         Point v3 = t.v3;
         Point n = t.getNormalToPlane();
-        // cout << "Normal: " << n.x << " " << n.y << " " << n.z << endl;
         // plane equation Ax + By + Cz + D = 0
         double A = n.x, B = n.y, C = n.z;
         double D = -n.x * v1.x - n.y * v1.y - n.z * v1.z;
-        Point centroid = t.getCentroid();
+        // Point centroid = t.getCentroid();
 
         double topScanline, bottomScanline;
         double maxY = max(max(v1.y, v2.y), v3.y);
-        if (maxY > Top_Y) topScanline = Top_Y;
-        else {
-            if (abs(centroid.y - ceil(maxY / dy) * dy) <= abs(centroid.y - floor(maxY / dy) * dy))
-                topScanline = ceil(maxY / dy) * dy;
-            else topScanline = floor(maxY / dy) * dy;
-        }
+        topScanline = min(ceil(maxY / dy) * dy, Top_Y);
+            
         double minY = min(min(v1.y, v2.y), v3.y);
-        if (minY < Bottom_Y) bottomScanline = Bottom_Y;
-        else {
-            if (abs(centroid.y - ceil(minY / dy) * dy) < abs(centroid.y - floor(minY / dy) * dy))
-                bottomScanline = ceil(minY / dy) * dy;
-            else bottomScanline = floor(minY / dy) * dy;
-        }
-        // bottomScanline = floor(minY / dy) * dy;
+        bottomScanline = max(floor(minY / dy) * dy, Bottom_Y);
 
-        // cout << v1.y << " " << v2.y << " " << v3.y << endl;
-        cout << "Top Scanline: " << topScanline << " ";
-        cout << "Bottom Scanline: " << bottomScanline << endl;
+        // cout << "Top Scanline: " << topScanline << " ";
+        // cout << "Bottom Scanline: " << bottomScanline << endl;
 
         for (double y = topScanline; y >= bottomScanline; y -= dy) {
             double leftIntersectingColumn, rightIntersectingColumn;
             //! fix this
             double minX = getLeftIntersectingColumn(y, t);
-            if (minX < Left_X) leftIntersectingColumn = Left_X;
-            else leftIntersectingColumn = (minX / dx) * dx;
-            // leftIntersectingColumn = max(minX, Left_X);
+            leftIntersectingColumn = max(minX, Left_X);
 
             double maxX = getRightIntersectingColumn(y, t);
-            if (maxX > Right_X) rightIntersectingColumn = Right_X;
-            else rightIntersectingColumn = (maxX / dx) * dx;
-            // rightIntersectingColumn = min(maxX, Right_X);
+            rightIntersectingColumn = min(maxX, Right_X);
 
-            cout << "Left Intersecting Column: " << leftIntersectingColumn << " ";
-            cout << "Right Intersecting Column: " << rightIntersectingColumn << endl;
+            // cout << "Left Intersecting Column: " << leftIntersectingColumn << " ";
+            // cout << "Right Intersecting Column: " << rightIntersectingColumn << endl;
 
             for (double x = leftIntersectingColumn; x <= rightIntersectingColumn; x += dx) {
                 // Calculate z-value
@@ -323,7 +306,7 @@ int main() {
         for (int j = 0; j < screenWidth; j++) {
             if (zBuffer[i][j] < z_max)
                 output << zBuffer[i][j] << "\t";
-            else output << "\t";
+            // else output << "\t";
         }
         output << endl;
     }
