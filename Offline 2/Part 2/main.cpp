@@ -263,33 +263,38 @@ int main() {
 
         double topScanline, bottomScanline;
         double maxY = max(max(v1.y, v2.y), v3.y);
-        topScanline = min(ceil(maxY / dy) * dy, Top_Y);
+        topScanline = ceil(min(maxY / dy, Top_Y / dy));
+        // cout << ceil(maxY / dy) << " " << ceil(Top_Y / dy) << endl;
             
         double minY = min(min(v1.y, v2.y), v3.y);
-        bottomScanline = max(floor(minY / dy) * dy, Bottom_Y);
+        bottomScanline = floor(max(minY / dy, Bottom_Y / dy));
 
         // cout << "Top Scanline: " << topScanline << " ";
         // cout << "Bottom Scanline: " << bottomScanline << endl;
 
-        for (double y = topScanline; y >= bottomScanline; y -= dy) {
+        for (int scanline = topScanline; scanline >= bottomScanline; scanline--) {
             double leftIntersectingColumn, rightIntersectingColumn;
             //! fix this
-            double minX = getLeftIntersectingColumn(y, t);
-            leftIntersectingColumn = max(minX, Left_X);
+            double minX = getLeftIntersectingColumn(scanline*dy, t);
+            leftIntersectingColumn = round(max(minX / dx, Left_X / dx));
 
-            double maxX = getRightIntersectingColumn(y, t);
-            rightIntersectingColumn = min(maxX, Right_X);
+            double maxX = getRightIntersectingColumn(scanline*dy, t);
+            rightIntersectingColumn = round(min(maxX / dx, Right_X / dx));
 
             // cout << "Left Intersecting Column: " << leftIntersectingColumn << " ";
             // cout << "Right Intersecting Column: " << rightIntersectingColumn << endl;
 
-            for (double x = leftIntersectingColumn; x <= rightIntersectingColumn; x += dx) {
+            for (int intCol = leftIntersectingColumn; intCol <= rightIntersectingColumn; intCol++) {
                 // Calculate z-value
                 // from plane equation
+                double x = intCol * dx;
+                double y = scanline * dy;
                 double z_value = (-D - A * x - B * y) / C;
                 // Compare with z-buffer and z front limit
-                int row = ((Top_Y - y) / dy);
-                int col = ((x - Left_X) / dx);
+                // int row = ((Top_Y - y) / dy);
+                // int col = ((x - Left_X) / dx);
+                int row = (Top_Y/dy) - scanline;
+                int col = intCol - (Left_X/dx);
                 if (z_value < zBuffer[row][col] && z_value > z_front_limit) {
                     zBuffer[row][col] = z_value;
                     // Set color
