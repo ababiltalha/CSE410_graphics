@@ -6,7 +6,7 @@
 
 using namespace std;
 
-string inputFilePath = ""; // "Test Cases (Updated 2 Aug)/3/"; //! ""
+string inputFilePath = "Test Cases (Updated 2 Aug)/1/"; //! ""
 
 double getLeftIntersectingColumn(double y, const Triangle& t) {
     double minX = 9999;
@@ -225,7 +225,7 @@ int main() {
     double leftLimit = -1.0;
     double topLimit = 1.0;
     double bottomLimit = -1.0;
-    double z_max = 2.0;
+    double z_max = 1.0;
     double z_front_limit = -1.0;
 
     double dx = (rightLimit - leftLimit) / screenWidth;
