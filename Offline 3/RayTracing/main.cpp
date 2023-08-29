@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 #include <GL/glut.h>
+#include "bitmap_image.hpp"
 #include "Point.hpp"
 #include "Object.hpp"
 #include "Checkerboard.hpp"
@@ -9,6 +10,7 @@
 #include "LightSource.hpp"
 #include "NormalLight.hpp"
 #include "SpotLight.hpp"
+#include "Ray.hpp"
 
 #define PI acos(-1.0)
 #define degToRad(x) (x * PI / 180.0)
@@ -23,18 +25,135 @@
 #define SPECULAR 2
 #define REFLECTION 3
 
+
+
 using namespace std;
 
 Point pos, u, r, l;
-double near, far, fovY, aspectRatio;
+double near, far, fovY, aspectRatio, fovX;
 int recursionLevel, numberOfPixels;
 Checkerboard checkerboard;
 int numberOfObjects;
-vector<Object> objects;
+vector<Object*> objects;
 int numberOfNormalLights;
 vector<NormalLight> normalLights;
 int numberOfSpotLights;
 vector<SpotLight> spotLights;
+double screenHeight, screenWidth;
+
+int windowWidth = 800;
+int windowHeight = 800;
+
+// take the information from description.txt using ifstream fin
+// and store them in the global variables
+void inputDescription(string fileName) {
+    ifstream fin(fileName);
+    fin >> near >> far >> fovY >> aspectRatio;
+
+    fin >> recursionLevel;
+    fin >> numberOfPixels;
+
+    fin >> checkerboard.cellWidth;
+    fin >> checkerboard.coEfficients[AMBIENT] >> checkerboard.coEfficients[DIFFUSE] >> checkerboard.coEfficients[REFLECTION];
+
+    fin >> numberOfObjects;
+
+    for (int i = 0; i < numberOfObjects; i++)
+    {
+        string type;
+        fin >> type;
+        Object* object;
+        double color[3];
+        double coEfficients[4];
+        int shininess;
+        if (type == "sphere") {
+            Point center;
+            double radius;
+            fin >> center.x >> center.y >> center.z;
+            fin >> radius;
+            object = new Sphere(center, radius);
+            fin >> color[R] >> color[G] >> color[B];
+            fin >> coEfficients[AMBIENT] >> coEfficients[DIFFUSE] >> coEfficients[SPECULAR] >> coEfficients[REFLECTION];
+            fin >> shininess;
+            object->setColor(color);
+            object->setCoEfficients(coEfficients);
+            object->setShininess(shininess);
+            objects.push_back(object);
+        } else if (type == "pyramid") {
+            Point lowest;
+            double width, height;
+            fin >> lowest.x >> lowest.y >> lowest.z;
+            fin >> width >> height;
+            object = new Pyramid(lowest, width, height);
+            fin >> color[R] >> color[G] >> color[B];
+            fin >> coEfficients[AMBIENT] >> coEfficients[DIFFUSE] >> coEfficients[SPECULAR] >> coEfficients[REFLECTION];
+            fin >> shininess;
+            object->setColor(color);
+            object->setCoEfficients(coEfficients);
+            object->setShininess(shininess);
+            objects.push_back(object);
+        } else if (type == "cube") {
+            Point bottomLowerLeft;
+            double edge;
+            fin >> bottomLowerLeft.x >> bottomLowerLeft.y >> bottomLowerLeft.z;
+            fin >> edge;
+            object = new Cube(bottomLowerLeft, edge);
+            fin >> color[R] >> color[G] >> color[B];
+            fin >> coEfficients[AMBIENT] >> coEfficients[DIFFUSE] >> coEfficients[SPECULAR] >> coEfficients[REFLECTION];
+            fin >> shininess;
+            object->setColor(color);
+            object->setCoEfficients(coEfficients);
+            object->setShininess(shininess);
+            objects.push_back(object);
+        } else {
+            cout << "Invalid object type" << endl;
+            return;
+        }
+    }
+
+    fin >> numberOfNormalLights;
+    for (int i = 0; i < numberOfNormalLights; i++)
+    {
+        NormalLight normalLight;
+        fin >> normalLight.position.x >> normalLight.position.y >> normalLight.position.z;
+        fin >> normalLight.falloff;
+        normalLights.push_back(normalLight);
+    }
+
+    fin >> numberOfSpotLights;
+    for (int i = 0; i < numberOfSpotLights; i++)
+    {
+        SpotLight spotLight;
+        fin >> spotLight.position.x >> spotLight.position.y >> spotLight.position.z;
+        fin >> spotLight.falloff;
+        fin >> spotLight.direction.x >> spotLight.direction.y >> spotLight.direction.z;
+        fin >> spotLight.cutoffAngle;
+        spotLights.push_back(spotLight);
+    }
+
+    fin.close();
+
+    fovX = aspectRatio * fovY;
+    // cout << tan(PI / 4.0) << endl;
+    screenHeight = 2 * near * tan(degToRad(fovY/2));
+    screenWidth = 2 * near * tan(degToRad(fovX/2));
+    
+    cout << "input taken" << endl;
+}
+
+void debugInput(){
+    // print details of all object
+    // for (const auto object : objects) {
+    //     cout << "Object: " << endl;
+    //     cout << "Color: " << object->color[R] << " " << object->color[G] << " " << object->color[B] << endl;
+    //     cout << "Co-efficients: " << object->coEfficients[AMBIENT] << " " << object->coEfficients[DIFFUSE] << " " << object->coEfficients[SPECULAR] << " " << object->coEfficients[REFLECTION] << endl;
+    //     cout << "Shininess: " << object->shininess << endl;
+    //     cout << endl;
+    // }
+    cout << fovX << " " << fovY << endl;
+    cout << screenHeight << " " << screenWidth << endl;
+}
+
 
 /* Initialize OpenGL Graphics */
 void initGL() {
@@ -65,15 +184,28 @@ void drawAxes() {
 }
 
 void setCamera(){
-    pos.x=0;    pos.y=15;    pos.z=15;
-    l.x=0;      l.y=0;      l.z=-1;
+    pos.x=0;    pos.y=-100;    pos.z=40;
+    l.x=0;      l.y=50;      l.z=-10;
+    l.normalize();
+    // cout << l.x << " " << l.y << " " << l.z << endl;
     r.x=1;      r.y=0;      r.z=0;
     u = r.cross(l);
 }
 
+// capture the current window and save it in a file
+void capture(){
+    // init
+    bitmap_image image(windowWidth, windowHeight);
+    image.set_all_channels(0, 0, 0);
 
+    // image.save_image("test.png");
 
-/*  Handler for window-repaint event. Call back when the window first appears and
+}
+
+int temp = 0;
+
+/*  //! DISPLAY FUNCTION
+    Handler for window-repaint event. Call back when the window first appears and
     whenever the window needs to be re-painted. */
 void display() {
     // glClear(GL_COLOR_BUFFER_BIT);            // Clear the color buffer (background)
@@ -86,13 +218,21 @@ void display() {
 
     u = r.cross(l);
     // control viewing (or camera)
-    gluLookAt(pos.x, pos.y, pos.z,
-              pos.x+l.x, pos.y+l.y, pos.z+l.z,
-              u.x, u.y, u.z);
-    // draw
+    gluLookAt(
+        pos.x, pos.y, pos.z,
+        pos.x+l.x, pos.y+l.y, pos.z+l.z,
+        u.x, u.y, u.z
+    );
+
+    // start draw
     drawAxes();
     // draw the checkerboard
-    checkerboard.draw();
+    checkerboard.drawBoard(windowWidth, windowHeight);
+    // draw all the objects from the objects vector
+
+    for (const auto object : objects) {
+        object->draw();
+    }
 
     glutSwapBuffers();  // Render now
 }
@@ -118,7 +258,7 @@ void reshape(GLsizei width, GLsizei height) {  // GLsizei for non-negative integ
         gluOrtho2D(-1.0, 1.0, -1.0 / aspect, 1.0 / aspect);
     }*/
     // Enable perspective projection with fovy, aspect, zNear and zFar
-    gluPerspective(fovY, aspect, near, far);
+    gluPerspective(fovY, aspectRatio, near, far);
 }
 
 void keyboardListener(unsigned char key, int xx,int yy){
@@ -185,6 +325,9 @@ void keyboardListener(unsigned char key, int xx,int yy){
 			r.z = r.z*cos(-rate)-u.z*sin(-rate);
 			break;
 
+        case '0':
+            capture();
+
 		default:
 			break;
 	}
@@ -243,90 +386,25 @@ void specialKeyListener(int key, int x,int y)
 	glutPostRedisplay();
 }
 
+void clearMemory(){
+    for (const auto object : objects)
+    {
+        delete object;
+    }
+}
 
 
 int main(int argc, char** argv)
 {
-    ifstream fin("description.txt");
-    fin >> near >> far >> fovY >> aspectRatio;
-
-    fin >> recursionLevel;
-    fin >> numberOfPixels;
-
-    fin >> checkerboard.cellWidth;
-    fin >> checkerboard.coEfficients[AMBIENT] >> checkerboard.coEfficients[DIFFUSE] >> checkerboard.coEfficients[REFLECTION];
-
-    fin >> numberOfObjects;
-
-    for (int i = 0; i < numberOfObjects; i++)
-    {
-        string type;
-        fin >> type;
-        if (type == "sphere") {
-            Sphere sphere;
-            fin >> sphere.center.x >> sphere.center.y >> sphere.center.z;
-            fin >> sphere.radius;
-            fin >> sphere.color[R] >> sphere.color[G] >> sphere.color[B];
-            fin >> sphere.coEfficients[AMBIENT] >> sphere.coEfficients[DIFFUSE] >> sphere.coEfficients[SPECULAR] >> sphere.coEfficients[REFLECTION];
-            fin >> sphere.shininess;
-            objects.push_back(sphere);
-        } else if (type == "pyramid") {
-            Pyramid pyramid;
-            fin >> pyramid.lowest.x >> pyramid.lowest.y >> pyramid.lowest.z;
-            fin >> pyramid.width >> pyramid.height;
-            fin >> pyramid.color[R] >> pyramid.color[G] >> pyramid.color[B];
-            fin >> pyramid.coEfficients[AMBIENT] >> pyramid.coEfficients[DIFFUSE] >> pyramid.coEfficients[SPECULAR] >> pyramid.coEfficients[REFLECTION];
-            fin >> pyramid.shininess;
-            objects.push_back(pyramid);
-        } else if (type == "cube") {
-            Cube cube;
-            fin >> cube.bottomLowerLeft.x >> cube.bottomLowerLeft.y >> cube.bottomLowerLeft.z;
-            fin >> cube.edge;
-            fin >> cube.color[R] >> cube.color[G] >> cube.color[B];
-            fin >> cube.coEfficients[AMBIENT] >> cube.coEfficients[DIFFUSE] >> cube.coEfficients[SPECULAR] >> cube.coEfficients[REFLECTION];
-            fin >> cube.shininess;
-            objects.push_back(cube);
-        } else {
-            cout << "Invalid object type" << endl;
-            return 0;
-        }
-    }
-
-    fin >> numberOfNormalLights;
-    for (int i = 0; i < numberOfNormalLights; i++)
-    {
-        NormalLight normalLight;
-        fin >> normalLight.position.x >> normalLight.position.y >> normalLight.position.z;
-        fin >> normalLight.falloff;
-        normalLights.push_back(normalLight);
-    }
-
-    fin >> numberOfSpotLights;
-    for (int i = 0; i < numberOfSpotLights; i++)
-    {
-        SpotLight spotLight;
-        fin >> spotLight.position.x >> spotLight.position.y >> spotLight.position.z;
-        fin >> spotLight.falloff;
-        fin >> spotLight.direction.x >> spotLight.direction.y >> spotLight.direction.z;
-        fin >> spotLight.cutoffAngle;
-        spotLights.push_back(spotLight);
-    }
-
-    fin.close();
-
-    cout << "input taken" << endl;
-
-    //
-
-
-
+    inputDescription("description.txt");
+    debugInput();
     setCamera();
 
     glutInit(&argc, argv);                  // Initialize GLUT
-    glutInitWindowSize(640, 640);           // Set the window's initial width & height
+    glutInitWindowSize(windowWidth, windowHeight);           // Set the window's initial width & height
     glutInitWindowPosition(50, 50);         // Position the window's initial top-left corner
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);	//Depth, Double buffer, RGB color
-    glutCreateWindow("OpenGL 3D Drawing 2");          // Create a window with the given title
+    glutCreateWindow("Tray Racing");          // Create a window with the given title
     glutDisplayFunc(display);               // Register display callback handler for window re-paint
     glutReshapeFunc(reshape);               // Register callback handler for window re-shape
 
@@ -335,6 +413,7 @@ int main(int argc, char** argv)
 
     initGL();                               // Our own OpenGL initialization
     glutMainLoop();                         // Enter the event-processing loop
+    clearMemory();
     return 0;
 
 }
