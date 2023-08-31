@@ -2,6 +2,7 @@
 #define CUBE_HPP
 
 #include "Object.hpp"
+#include "Square.hpp"
 
 class Cube : public Object
 {
@@ -64,11 +65,53 @@ public:
         glEnd();
     }
 
-    virtual double intersect(Ray ray){
-        // find intersection of the ray with the cube
-        // if intersected then return distance from source to intersection point
-        // otherwise return -1
-        return -1;
+    virtual double intersect(Ray* ray){
+        // Bottom face
+        Square sq1(bottomLowerLeft, bottomLowerLeft + Point(edge, edge, 0));
+        // Top face
+        Square sq2(bottomLowerLeft + Point(0, 0, edge), bottomLowerLeft + Point(edge, edge, edge));
+        // Left face
+        Square sq3(bottomLowerLeft, bottomLowerLeft + Point(0, edge, edge));
+        // Right face
+        Square sq4(bottomLowerLeft + Point(edge, 0, 0), bottomLowerLeft + Point(edge, edge, edge));
+        // Front face
+        Square sq5(bottomLowerLeft, bottomLowerLeft + Point(edge, 0, edge));
+        // Back face
+        Square sq6(bottomLowerLeft + Point(0, edge, 0), bottomLowerLeft + Point(edge, edge, edge));
+        
+        double t1 = sq1.intersect(ray);
+        double t2 = sq2.intersect(ray);
+        double t3 = sq3.intersect(ray);
+        double t4 = sq4.intersect(ray);
+        double t5 = sq5.intersect(ray);
+        double t6 = sq6.intersect(ray);
+
+        double minT = -1;
+        if (t1 > 0 && (minT < 0 || t1 < minT)){
+            minT = t1;
+        }
+        if (t2 > 0 && (minT < 0 || t2 < minT)){
+            minT = t2;
+        }
+        if (t3 > 0 && (minT < 0 || t3 < minT)){
+            minT = t3;
+        }
+        if (t4 > 0 && (minT < 0 || t4 < minT)){
+            minT = t4;
+        }
+        if (t5 > 0 && (minT < 0 || t5 < minT)){
+            minT = t5;
+        }
+        if (t6 > 0 && (minT < 0 || t6 < minT)){
+            minT = t6;
+        }
+
+        if (minT > 0){
+            ray->setIntersectionPoint(ray->start + ray->direction * minT);
+            return minT;
+        } else {
+            return -1;
+        }
     }
 };
 

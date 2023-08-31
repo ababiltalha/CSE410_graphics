@@ -23,28 +23,28 @@ public:
         glPopMatrix();
     }
 
-    virtual double intersect(Ray ray){
+    virtual double intersect(Ray* ray){
         // Using determinant to find intersection
         // if a ray intersects the surface of the sphere then return the distance
         // from the source of the ray to the intersection point
         // otherwise return -1
-        double a = ray.direction.dot(ray.direction);
-        double b = 2 * ray.direction.dot(ray.start - center);
-        double c = (ray.start - center).dot(ray.start - center) - radius*radius;
+        double a = ray->direction.dot(ray->direction);
+        double b = 2 * ray->direction.dot(ray->start - center);
+        double c = (ray->start - center).dot(ray->start - center) - radius*radius;
         double det = b * b - 4 * a * c;
         if (det < 0) return -1;
         double t1 = (-b + sqrt(det)) / (2 * a);
         double t2 = (-b - sqrt(det)) / (2 * a);
         if (t1 < 0 && t2 < 0) return -1;
         if (t1 < 0) {
-            ray.intersectionPoint = ray.start + ray.direction * t2;
+            ray->intersectionPoint = ray->start + ray->direction * t2;
             return t2;
         }
         if (t2 < 0) {
-            ray.intersectionPoint = ray.start + ray.direction * t1;
+            ray->intersectionPoint = ray->start + ray->direction * t1;
             return t1;
         }
-        ray.intersectionPoint = ray.start + ray.direction * std::min(t1, t2);
+        ray->intersectionPoint = ray->start + ray->direction * std::min(t1, t2);
         return std::min(t1, t2);
     }
 };

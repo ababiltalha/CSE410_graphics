@@ -27,7 +27,7 @@ public:
         // draw the object
     }
 
-    virtual double intersect(Ray ray){
+    virtual double intersect(Ray* ray){
         // return the distance from the source to the object
         return 0;
     }

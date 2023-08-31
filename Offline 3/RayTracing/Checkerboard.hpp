@@ -22,8 +22,10 @@ public:
     virtual void draw(){
         //! draw the checkerboard infinitely with respect to the eye position
         //? how to understand color of tile in intersect?
-        for (int i = -windowWidth / cellWidth; i < windowWidth / cellWidth; ++i) {
-            for (int j = -windowHeight / cellWidth; j < windowHeight / cellWidth; ++j) {
+        int widthRange = ceil(windowWidth / cellWidth);
+        int heightRange = ceil(windowHeight / cellWidth);
+        for (int i = -widthRange; i < widthRange; ++i) {
+            for (int j = -heightRange; j < heightRange; ++j) {
                 float x = i * cellWidth;
                 float y = j * cellWidth;
 
@@ -43,17 +45,17 @@ public:
         }
     }
 
-    virtual double intersect(Ray ray){
-        double t = -ray.start.z / ray.direction.z;
+    virtual double intersect(Ray* ray){
+        double t = (-ray->start.z) / ray->direction.z;
+        ray->setIntersectionPoint(ray->start + ray->direction * t);
         if (t < 0) return -1;
-        ray.intersectionPoint = ray.start + ray.direction * t;
         return t;
     }
 
     virtual Color getColor(Point intersectionPoint){
-        int x = intersectionPoint.x / cellWidth;
-        int y = intersectionPoint.y / cellWidth;
-        if ((x + y) % 2) {
+        int i = ceil(intersectionPoint.x / cellWidth);
+        int j = ceil(intersectionPoint.y / cellWidth);
+        if ((i + j) % 2) {
             return Color(0, 0, 0);
         } else {
             return Color(1, 1, 1);

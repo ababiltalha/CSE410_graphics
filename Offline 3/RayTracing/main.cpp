@@ -45,6 +45,8 @@ double nearHeight, nearWidth;
 int windowWidth = 800;
 int windowHeight = 800;
 
+ofstream fout;
+
 // take the information from description.txt using ifstream fin
 // and store them in the global variables
 void inputDescription(string fileName) {
@@ -192,6 +194,7 @@ void setCamera(){
     u = r.cross(l);
 }
 
+//! CAPTURE FUNCTION
 // capture the current window and save it in a file
 void capture(){
     // init
@@ -213,19 +216,18 @@ void capture(){
             Ray ray(pixel, pixel - pos);
             double tMin = INT_MAX;
             // checkerboard floor intersect
-            double t = checkerboard.intersect(ray);
-            if (t > 0) {
+            double t = checkerboard.intersect(&ray);
+            if (t > 0 && t < tMin && t < far) {
                 tMin = t;
                 Color color = checkerboard.getColor(ray.intersectionPoint);
                 image.set_pixel(i, j, color.r * 255, color.g * 255, color.b * 255);
             }
             for (const auto object : objects) {
-                double t = object->intersect(ray);
-                if (t > 0 && t < tMin) {
+                double t = object->intersect(&ray);
+                if (t > 0 && t < tMin && t < far) {
                     tMin = t;
                     Color color = object->getColor(ray.intersectionPoint);
                     image.set_pixel(i, j, color.r * 255, color.g * 255, color.b * 255);
-                    break;
                 }
             }
         }
@@ -432,7 +434,7 @@ void clearMemory(){
 int main(int argc, char** argv)
 {
     inputDescription("description.txt");
-    debugInput();
+    // debugInput();
     setCamera();
 
     glutInit(&argc, argv);                  // Initialize GLUT
