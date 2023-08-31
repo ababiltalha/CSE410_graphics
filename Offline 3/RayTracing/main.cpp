@@ -11,6 +11,7 @@
 #include "NormalLight.hpp"
 #include "SpotLight.hpp"
 #include "Ray.hpp"
+#include "Color.hpp"
 
 #define PI acos(-1.0)
 #define degToRad(x) (x * PI / 180.0)
@@ -39,7 +40,7 @@ int numberOfNormalLights;
 vector<NormalLight> normalLights;
 int numberOfSpotLights;
 vector<SpotLight> spotLights;
-double screenHeight, screenWidth;
+double nearHeight, nearWidth;
 
 int windowWidth = 800;
 int windowHeight = 800;
@@ -63,7 +64,7 @@ void inputDescription(string fileName) {
         string type;
         fin >> type;
         Object* object;
-        double color[3];
+        Color color;
         double coEfficients[4];
         int shininess;
         if (type == "sphere") {
@@ -72,7 +73,7 @@ void inputDescription(string fileName) {
             fin >> center.x >> center.y >> center.z;
             fin >> radius;
             object = new Sphere(center, radius);
-            fin >> color[R] >> color[G] >> color[B];
+            fin >> color.r >> color.g >> color.b;
             fin >> coEfficients[AMBIENT] >> coEfficients[DIFFUSE] >> coEfficients[SPECULAR] >> coEfficients[REFLECTION];
             fin >> shininess;
             object->setColor(color);
@@ -85,7 +86,7 @@ void inputDescription(string fileName) {
             fin >> lowest.x >> lowest.y >> lowest.z;
             fin >> width >> height;
             object = new Pyramid(lowest, width, height);
-            fin >> color[R] >> color[G] >> color[B];
+            fin >> color.r >> color.g >> color.b;
             fin >> coEfficients[AMBIENT] >> coEfficients[DIFFUSE] >> coEfficients[SPECULAR] >> coEfficients[REFLECTION];
             fin >> shininess;
             object->setColor(color);
@@ -98,7 +99,7 @@ void inputDescription(string fileName) {
             fin >> bottomLowerLeft.x >> bottomLowerLeft.y >> bottomLowerLeft.z;
             fin >> edge;
             object = new Cube(bottomLowerLeft, edge);
-            fin >> color[R] >> color[G] >> color[B];
+            fin >> color.r >> color.g >> color.b;
             fin >> coEfficients[AMBIENT] >> coEfficients[DIFFUSE] >> coEfficients[SPECULAR] >> coEfficients[REFLECTION];
             fin >> shininess;
             object->setColor(color);
@@ -135,10 +136,10 @@ void inputDescription(string fileName) {
 
     fovX = aspectRatio * fovY;
     // cout << tan(PI / 4.0) << endl;
-    screenHeight = 2 * near * tan(degToRad(fovY/2));
-    screenWidth = 2 * near * tan(degToRad(fovX/2));
+    nearHeight = 2 * near * tan(degToRad(fovY/2));
+    nearWidth = 2 * near * tan(degToRad(fovX/2));
     
-    cout << "input taken" << endl;
+    cout << "Input Taken" << endl;
 }
 
 void debugInput(){
@@ -151,7 +152,6 @@ void debugInput(){
     //     cout << endl;
     // }
     cout << fovX << " " << fovY << endl;
-    cout << screenHeight << " " << screenWidth << endl;
 }
 
 
@@ -195,10 +195,45 @@ void setCamera(){
 // capture the current window and save it in a file
 void capture(){
     // init
-    bitmap_image image(windowWidth, windowHeight);
+    bitmap_image image(numberOfPixels, numberOfPixels);
     image.set_all_channels(0, 0, 0);
-
     // image.save_image("test.png");
+
+    double dw = nearWidth / numberOfPixels;
+    double dh = nearHeight / numberOfPixels;
+    Point middlePoint = pos + l * near;
+    Point topLeft = middlePoint - r * nearWidth / 2 + u * nearHeight / 2;
+    Point bottomRight = middlePoint + r * nearWidth / 2 - u * nearHeight / 2;
+    u.normalize();
+    r.normalize();
+    Point pixel;
+    for (int i=0; i < numberOfPixels; i++) {
+        for (int j=0; j < numberOfPixels; j++) {
+            pixel = topLeft + r * dw * i - u * dh * j;
+            Ray ray(pixel, pixel - pos);
+            double tMin = INT_MAX;
+            // checkerboard floor intersect
+            double t = checkerboard.intersect(ray);
+            if (t > 0) {
+                tMin = t;
+                Color color = checkerboard.getColor(ray.intersectionPoint);
+                image.set_pixel(i, j, color.r * 255, color.g * 255, color.b * 255);
+            }
+            for (const auto object : objects) {
+                double t = object->intersect(ray);
+                if (t > 0 && t < tMin) {
+                    tMin = t;
+                    Color color = object->getColor(ray.intersectionPoint);
+                    image.set_pixel(i, j, color.r * 255, color.g * 255, color.b * 255);
+                    break;
+                }
+            }
+        }
+    }
+    cout << "Capturing Image" << endl;
+    image.save_image("test.bmp");
+
+
 
 }
 

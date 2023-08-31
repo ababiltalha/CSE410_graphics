@@ -7,6 +7,7 @@ class Ray {
 public:
     Point start;
     Point direction;
+    Point intersectionPoint;
 
     Ray(Point start, Point dir){
         this->start = start;
@@ -14,7 +15,18 @@ public:
         dir.normalize();
     }
 
+    void setStart(Point start){
+        this->start = start;
+    }
     
+    void setDirection(Point dir){
+        this->direction = dir;
+        dir.normalize();
+    }
+
+    void setIntersectionPoint(Point intersectionPoint){
+        this->intersectionPoint = intersectionPoint;
+    }
 };
 
 #endif // RAY_HPP

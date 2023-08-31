@@ -17,7 +17,7 @@ public:
 
     virtual void draw(){
         // draw the pyramid with respect to lowest point, width and height
-        glColor3f(color[0], color[1], color[2]);
+        glColor3f(color.r, color.g, color.b);
         glPushMatrix();
             glTranslatef(lowest.x + width/2, lowest.y + width/2, lowest.z);
             glScalef(width/2, width/2, height);

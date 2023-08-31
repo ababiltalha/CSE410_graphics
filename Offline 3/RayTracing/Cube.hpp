@@ -16,7 +16,7 @@ public:
 
     virtual void draw(){
         // draw the cube with respect to bottom lower left point and edge length
-        glColor3f(color[0], color[1], color[2]);
+        glColor3f(color.r, color.g, color.b);
         glPushMatrix();
             glTranslatef(bottomLowerLeft.x, bottomLowerLeft.y, bottomLowerLeft.z);
             glScalef(edge, edge, edge);
@@ -62,6 +62,13 @@ public:
             glVertex3f(1, 1, 0);
             glVertex3f(0, 1, 0);      
         glEnd();
+    }
+
+    virtual double intersect(Ray ray){
+        // find intersection of the ray with the cube
+        // if intersected then return distance from source to intersection point
+        // otherwise return -1
+        return -1;
     }
 };
 
