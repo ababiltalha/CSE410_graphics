@@ -60,7 +60,7 @@ public:
     }
 
     virtual double intersect(Ray* ray){
-        // 5 points
+        
         Point a = lowest;
         Point b = lowest + Point(width, 0, 0);
         Point c = lowest + Point(width, width, 0);

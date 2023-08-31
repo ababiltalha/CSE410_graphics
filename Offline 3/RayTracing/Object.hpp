@@ -1,6 +1,11 @@
 #ifndef OBJECT_HPP
 #define OBJECT_HPP
 
+#define AMBIENT 0
+#define DIFFUSE 1
+#define SPECULAR 2
+#define REFLECTION 3
+
 #include "Point.hpp"
 #include "Color.hpp"
 #include "Ray.hpp"
@@ -34,7 +39,7 @@ public:
 
     virtual Color getColor(Point intersectionPoint){
         // return the color of the object at the intersection point
-        return color;
+        return color * coEfficients[AMBIENT];
     }
 };
 

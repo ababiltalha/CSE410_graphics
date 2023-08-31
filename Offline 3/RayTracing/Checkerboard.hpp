@@ -21,7 +21,6 @@ public:
     
     virtual void draw(){
         //! draw the checkerboard infinitely with respect to the eye position
-        //? how to understand color of tile in intersect?
         int widthRange = ceil(windowWidth / cellWidth);
         int heightRange = ceil(windowHeight / cellWidth);
         for (int i = -widthRange; i < widthRange; ++i) {
@@ -56,9 +55,9 @@ public:
         int i = ceil(intersectionPoint.x / cellWidth);
         int j = ceil(intersectionPoint.y / cellWidth);
         if ((i + j) % 2) {
-            return Color(0, 0, 0);
+            return Color(0, 0, 0) * coEfficients[AMBIENT];
         } else {
-            return Color(1, 1, 1);
+            return Color(1, 1, 1) * coEfficients[AMBIENT];
         }
     }
 };
