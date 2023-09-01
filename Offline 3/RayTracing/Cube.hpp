@@ -15,7 +15,7 @@ public:
         this->edge = edge;
     }
 
-    virtual void draw(){
+    void draw(){
         // draw the cube with respect to bottom lower left point and edge length
         glColor3f(color.r, color.g, color.b);
         glPushMatrix();
@@ -65,7 +65,7 @@ public:
         glEnd();
     }
 
-    virtual double intersect(Ray* ray){
+    double intersect(Ray* ray){
         // Bottom face
         Square sq1(bottomLowerLeft, bottomLowerLeft + Point(edge, edge, 0));
         // Top face
@@ -86,55 +86,53 @@ public:
         double t5 = sq5.intersect(ray);
         double t6 = sq6.intersect(ray);
 
-        double minT = -1;
-        if (t1 > 0 && (minT < 0 || t1 < minT)){
-            minT = t1;
-        }
-        if (t2 > 0 && (minT < 0 || t2 < minT)){
-            minT = t2;
-        }
-        if (t3 > 0 && (minT < 0 || t3 < minT)){
-            minT = t3;
-        }
-        if (t4 > 0 && (minT < 0 || t4 < minT)){
-            minT = t4;
-        }
-        if (t5 > 0 && (minT < 0 || t5 < minT)){
-            minT = t5;
-        }
-        if (t6 > 0 && (minT < 0 || t6 < minT)){
-            minT = t6;
-        }
+        double minT = t1;
+        if (t2 > 0 && (minT < 0 || t2 < minT)) minT = t2;
+        if (t3 > 0 && (minT < 0 || t3 < minT)) minT = t3;
+        if (t4 > 0 && (minT < 0 || t4 < minT)) minT = t4;
+        if (t5 > 0 && (minT < 0 || t5 < minT)) minT = t5;
+        if (t6 > 0 && (minT < 0 || t6 < minT)) minT = t6;
 
         if (minT > 0){
-            ray->setIntersectionPoint(ray->start + ray->direction * minT);
+            // ray->setIntersectionPoint(ray->start + ray->direction * minT);
             return minT;
         } else {
             return -1;
         }
     }
 
-    virtual Point normalAt(Point point){
+    Point normalAt(Point point, Ray* ray){
         // find normal at point on cube surface
-        if (point.z == bottomLowerLeft.z){
-            return Point(0, 0, -1);
+        // Bottom face
+        if (abs(point.z - bottomLowerLeft.z) < EPSILON){
+            if (ray->direction.z > 0) return Point(0, 0, -1);
+            else return Point(0, 0, 1);
         }
-        if (point.z == bottomLowerLeft.z + edge){
-            return Point(0, 0, 1);
+        // Top face
+        if (abs(point.z - bottomLowerLeft.z - edge) < EPSILON){
+            if (ray->direction.z > 0) return Point(0, 0, -1);
+            else return Point(0, 0, 1);
         }
-        if (point.x == bottomLowerLeft.x){
-            return Point(-1, 0, 0);
+        // Left face
+        if (abs(point.x - bottomLowerLeft.x) < EPSILON){
+            if (ray->direction.x > 0) return Point(-1, 0, 0);
+            else return Point(1, 0, 0);
         }
-        if (point.x == bottomLowerLeft.x + edge){
-            return Point(1, 0, 0);
+        if (abs(point.x - bottomLowerLeft.x - edge) < EPSILON){
+            if (ray->direction.x > 0) return Point(-1, 0, 0);
+            else return Point(1, 0, 0);
         }
-        if (point.y == bottomLowerLeft.y){
-            return Point(0, -1, 0);
+        if (abs(point.y - bottomLowerLeft.y) < EPSILON){
+            if (ray->direction.y > 0) return Point(0, -1, 0);
+            else return Point(0, 1, 0);
         }
-        if (point.y == bottomLowerLeft.y + edge){
-            return Point(0, 1, 0);
+        if (abs(point.y - bottomLowerLeft.y - edge) < EPSILON){
+            if (ray->direction.y > 0) return Point(0, -1, 0);
+            else return Point(0, 1, 0);
         }
-        // std::cout << "Error: Point not on cube surface" << std::endl;
+        std::cout << "Error: Point not on cube surface" << std::endl;
+        std::cout << "Cube: " << bottomLowerLeft.x << " " << bottomLowerLeft.y << " " << bottomLowerLeft.z << " " << edge << std::endl;
+        std::cout << "Point: " << point.x << " " << point.y << " " << point.z << std::endl;
         return Point(0, 0, 0);
     }
 };

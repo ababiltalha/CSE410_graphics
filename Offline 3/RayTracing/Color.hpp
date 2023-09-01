@@ -7,7 +7,7 @@ public:
     double r, g, b;
 
     Color(){
-        r = g = b = 0;
+        r = g = b = 1;
     }
 
     Color(double r, double g, double b){

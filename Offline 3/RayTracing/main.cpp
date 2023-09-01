@@ -24,7 +24,7 @@
 
 using namespace std;
 
-string fileName = "description-2.txt";
+string fileName = "description.txt";
 
 Point pos, u, r, l;
 double near, far, fovY, aspectRatio, fovX;
@@ -127,10 +127,12 @@ void inputDescription(string fileName) {
     for (int i = 0; i < numberOfSpotLights; i++)
     {
         SpotLight* spotLight = new SpotLight();
+        Point lookAt;
         fin >> spotLight->position.x >> spotLight->position.y >> spotLight->position.z;
         fin >> spotLight->falloff;
-        fin >> spotLight->direction.x >> spotLight->direction.y >> spotLight->direction.z;
+        fin >> lookAt.x >> lookAt.y >> lookAt.z;
         fin >> spotLight->cutoffAngle;
+        spotLight->setDirection(lookAt - spotLight->position);
         spotLight->direction.normalize();
         spotLights.push_back(spotLight);
         lights.push_back(spotLight);
@@ -147,7 +149,11 @@ void inputDescription(string fileName) {
 }
 
 void debugInput(){
-    cout << "recursion level" << recursionLevel << endl;
+    cout << "Recursion level " << recursionLevel << endl;
+    cout << "Number of pixels " << numberOfPixels << endl;
+    cout << "Number of objects " << numberOfObjects << endl;
+    cout << "Number of normal lights " << numberOfNormalLights << endl;
+    cout << "Number of spot lights " << numberOfSpotLights << endl;
 }
 
 /* Initialize OpenGL Graphics */
@@ -179,11 +185,11 @@ void drawAxes() {
 }
 
 void setCamera(){
-    pos.x=0;    pos.y=-60;    pos.z=40;
-    l.x=0;      l.y=1;      l.z=0;
+    pos.x=0;    pos.y=150;    pos.z=50;
+    l.x=0;      l.y=-1;      l.z=0;
     l.normalize();
     // cout << l.x << " " << l.y << " " << l.z << endl;
-    r.x=1;      r.y=0;      r.z=0;
+    r.x=-1;      r.y=0;      r.z=0;
     u = r.cross(l);
 }
 
@@ -203,6 +209,7 @@ void capture(){
     u.normalize();
     r.normalize();
     Point pixel;
+    cout << "Rendering starting..." << endl;
     for (int i=0; i < numberOfPixels; i++) {
         for (int j=0; j < numberOfPixels; j++) {
             pixel = topLeft + r * dw * i - u * dh * j;
@@ -212,16 +219,21 @@ void capture(){
                 double t = object->intersect(&ray);
                 if (t > 0 && t < tMin && t < far) {
                     tMin = t;
-                    Color color = object->getAmbientColor(ray.intersectionPoint)
-                        + object->getDiffuseAndSpecularColor(ray.intersectionPoint, lights, objects, &ray)
-                        + object->getReflectedColor(ray.intersectionPoint, lights, objects, &ray, recursionLevel);
+                    Point intersectionPoint = ray.start + ray.direction * t;
+                    Color color = object->getAmbientColor(intersectionPoint);
+                    color = color + object->getDiffuseAndSpecularColor(intersectionPoint, lights, objects, &ray);
+                    color = color + object->getReflectedColor(intersectionPoint, lights, objects, &ray, recursionLevel);
                     color.check();
                     image.set_pixel(i, j, color.r * 255, color.g * 255, color.b * 255);
                 }
             }
+            
+        }
+        if (i % 100 == 0) {
+            cout << i * 100 / numberOfPixels << "% rendered" << endl;
         }
     }
-    cout << "Capturing Image" << endl;
+    cout << "Image rendered" << endl;
     image.save_image("test.bmp");
 
 
@@ -358,6 +370,13 @@ void keyboardListener(unsigned char key, int xx,int yy){
 
         case '0':
             capture();
+            break;
+
+        case ' ':
+            checkerboard.toggleTexture();
+            if (checkerboard.isTextureOn()) cout << "Texture on" << endl;
+            else cout << "Texture off" << endl;
+            break;
 
 		default:
 			break;
@@ -421,6 +440,10 @@ void clearMemory(){
     for (const auto object : objects)
     {
         delete object;
+    }
+    for (const auto light : lights)
+    {
+        delete light;
     }
 }
 

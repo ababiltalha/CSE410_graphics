@@ -1,6 +1,11 @@
 #ifndef CHECKERBOARD_HPP
 #define CHECKERBOARD_HPP
 
+#include "bitmap_image.hpp"
+
+bitmap_image black("texture_b.bmp");
+bitmap_image white("texture_w.bmp");
+
 #include "Object.hpp"
 
 class Checkerboard : public Object {
@@ -8,21 +13,31 @@ public:
     double cellWidth;
     int windowWidth;
     int windowHeight;
+    bool showTexture;
 
     Checkerboard(){
         this->coEfficients[SPECULAR] = 0; // no specular reflection
+        this->showTexture = false;
+        
     }
 
-    virtual void drawBoard(int windowWidth, int windowHeight){
+    void drawBoard(int windowWidth, int windowHeight){
         this->windowWidth = windowWidth;
         this->windowHeight = windowHeight;
         draw();
     }
+
+    void toggleTexture(){
+        showTexture = !showTexture;
+    }
+
+    bool isTextureOn(){
+        return showTexture;
+    }
     
-    virtual void draw(){
-        //! draw the checkerboard infinitely with respect to the eye position
-        int widthRange = ceil(windowWidth / cellWidth);
-        int heightRange = ceil(windowHeight / cellWidth);
+    void draw(){
+        int widthRange = floor(windowWidth / cellWidth);
+        int heightRange = floor(windowHeight / cellWidth);
         for (int i = -widthRange; i < widthRange; ++i) {
             for (int j = -heightRange; j < heightRange; ++j) {
                 float x = i * cellWidth;
@@ -46,23 +61,42 @@ public:
 
     virtual double intersect(Ray* ray){
         double t = (-ray->start.z) / ray->direction.z;
-        ray->setIntersectionPoint(ray->start + ray->direction * t);
+        // ray->setIntersectionPoint(ray->start + ray->direction * t);
         if (t < 0) return -1;
         return t;
     }
 
-    Color getColor(Point intersectionPoint){
-        int i = ceil(intersectionPoint.x / cellWidth);
-        int j = ceil(intersectionPoint.y / cellWidth);
+    virtual Color getColor(Point intersectionPoint){
+        int i = floor(intersectionPoint.x / cellWidth);
+        int j = floor(intersectionPoint.y / cellWidth);
+
         if ((i + j) % 2) {
-            return Color(0, 0, 0);
+            if (showTexture) {
+                int textureX = ((intersectionPoint.x / cellWidth) - floor(intersectionPoint.x / cellWidth)) * (black.width() -1);
+                int textureY = ((intersectionPoint.y / cellWidth) - floor(intersectionPoint.y / cellWidth)) * (black.height() -1);
+
+                unsigned char r, g, b;
+                black.get_pixel(textureX, textureY, r, g, b);
+                return Color(r / 255.0, g / 255.0, b / 255.0);
+            } else 
+                return Color(0, 0, 0);
         } else {
-            return Color(1, 1, 1);
+            if (showTexture) {
+                int textureX = ((intersectionPoint.x / cellWidth) - floor(intersectionPoint.x / cellWidth)) * (white.width() -1);
+                int textureY = ((intersectionPoint.y / cellWidth) - floor(intersectionPoint.y / cellWidth)) * (white.height() -1);
+
+                unsigned char r, g, b;
+                white.get_pixel(textureX, textureY, r, g, b);
+                return Color(r / 255.0, g / 255.0, b / 255.0);
+            }
+            else 
+                return Color(1, 1, 1);
         }
     }
 
-    Point normalAt(Point point){
-        //? what if camera is under the checkerboard
+    virtual Point normalAt(Point point, Ray* ray){
+        if (abs(point.z) > EPSILON) cout << "Error: point.z != 0" << endl;
+        if (ray->direction.z > 0) return Point(0, 0, -1);
         return Point(0, 0, 1);
     }
 

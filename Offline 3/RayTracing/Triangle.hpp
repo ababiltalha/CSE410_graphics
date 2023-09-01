@@ -51,15 +51,19 @@ public:
         if (detBeta >= 0 && detGamma >= 0 && detBeta + detGamma <= 1 && detT > 0){
             // ray->setIntersectionPoint(ray->start + ray->direction * detT);
             return detT;
-        } else {
-            return -1;
-        }
+        } else return -1;
     }
 
-    virtual Point normalAt(Point point){
+    virtual Point normalAt(Point point, Ray* ray){
         // find normal at point on triangle surface
         Point normal = (b - a).cross(c - a);
         normal.normalize();
+
+        if (normal.dot(ray->direction) > EPSILON){
+            normal = normal * -1;
+        }
+        // std::ofstream fout("debug.txt", std::ios::app);
+        // fout << "normal: " << normal.x << " " << normal.y << " " << normal.z << std::endl;
         return normal;
     }
 

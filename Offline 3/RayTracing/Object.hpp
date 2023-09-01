@@ -47,12 +47,11 @@ public:
         return color;
     }
 
-    virtual Color getAmbientColor(Point intersectionPoint){
-        // return Color((normalAt(intersectionPoint).x+1)/2, (normalAt(intersectionPoint).y+1)/2, (normalAt(intersectionPoint).z+1)/2);
+    Color getAmbientColor(Point intersectionPoint){
         return getColor(intersectionPoint) * coEfficients[AMBIENT];
     }
 
-    virtual Color getDiffuseAndSpecularColor(Point intersectionPoint, vector<LightSource*> lights, vector<Object*> objects, Ray* ray){
+    Color getDiffuseAndSpecularColor(Point intersectionPoint, vector<LightSource*> lights, vector<Object*> objects, Ray* ray){
         double lambert = 0;
         double phong = 0;
         for (const auto& light : lights) {
@@ -60,35 +59,33 @@ public:
             Point advancedStart = intersectionPoint + toSource.direction * EPSILON;
             toSource.setStart(advancedStart);
             assert(toSource.direction.length() < 1.1 && toSource.direction.length() > 0.9);
+            Ray toPoint(light->position, intersectionPoint - light->position);
 
             bool isShadow = false;
             if (light->type == 1) {
                 // spot light
                 SpotLight* spotLight = (SpotLight*) light;
-                Ray toPoint(spotLight->position, intersectionPoint - spotLight->position);
                 double angle = acos(toPoint.direction.dot(spotLight->direction));
-                if (angle > spotLight->cutoffAngle) {
+                if (radToDeg(angle) > spotLight->cutoffAngle) {
                     continue;
                 }
             }
 
             for (const auto &object : objects) {
                 double t = object->intersect(&toSource);
-                if (t > 0) {
+                if (t > 0 && t < toSource.start.distance(light->position)) {
                     isShadow = true;
-                    break;
+                    continue; //? break?
                 }
             }
 
             if (!isShadow) {
-                Point normal = normalAt(intersectionPoint);
+                Point normal = this->normalAt(intersectionPoint, &toPoint);
                 double distance = intersectionPoint.distance(light->position);
                 double scalingFactor = exp(-light->falloff * distance * distance);
                 lambert += scalingFactor * max(0.0, normal.dot(toSource.direction));
-                // reflected ray from incident ray from camera on this point
                 Point reflectedRay = ray->direction - normal * 2 * ray->direction.dot(normal);
                 reflectedRay.normalize();
-                // return Color(reflectedRay.x, reflectedRay.y, reflectedRay.z);
                 phong += scalingFactor * pow(max(0.0, reflectedRay.dot(toSource.direction)), shininess);
             }
         }
@@ -97,34 +94,37 @@ public:
         return diffuse + specular; // new color 
     }
 
-    virtual Point normalAt(Point point) = 0;
+    virtual Point normalAt(Point point, Ray* ray) = 0;
 
-    virtual Color getReflectedColor(Point intersectionPoint, vector<LightSource*> lights, vector<Object*> objects, Ray* ray, int recursionLevel){
+    Color getReflectedColor(Point intersectionPoint, vector<LightSource*> lights, vector<Object*> objects, Ray* ray, int recursionLevel){
         Color reflectedColor(0, 0, 0);
         Point currentIntersectionPoint = intersectionPoint;
-        while(recursionLevel > 0){
+        Ray* incidentRay = ray;
+        Object* closestObject = this;
+        while (recursionLevel > 0){
             recursionLevel--;
-            Point normal = normalAt(currentIntersectionPoint);
-            Point reflectedRay = ray->direction - normal * 2 * ray->direction.dot(normal);
+            Point normal = closestObject->normalAt(currentIntersectionPoint, incidentRay);
+            Point reflectedRay = incidentRay->direction - normal * 2 * incidentRay->direction.dot(normal);
             reflectedRay.normalize();
-            Ray reflected(currentIntersectionPoint, reflectedRay);
+            Ray reflected = Ray(currentIntersectionPoint, reflectedRay);
             Point advancedStart = currentIntersectionPoint + reflected.direction * EPSILON;
             reflected.setStart(advancedStart);
-            // assert(reflected.direction.length() < 1.1 && reflected.direction.length() > 0.9);
-            double minT = 1000000000;
-            Object* closestObject = NULL;
+            double minT = INT_MAX;
+            closestObject = NULL;
             for (const auto &object : objects) {
+                if (object == this) continue;
                 double t = object->intersect(&reflected);
                 if (t > 0 && t < minT) {
                     minT = t;
                     closestObject = object;
                 }
             }
-            if (closestObject == NULL) {
+            if (closestObject == NULL || minT == INT_MAX) {
                 reflectedColor = reflectedColor + Color(0, 0, 0); 
                 break;
             }
             currentIntersectionPoint = reflected.start + reflected.direction * minT;
+            incidentRay = &reflected;
             reflectedColor = reflectedColor + (closestObject->getAmbientColor(currentIntersectionPoint)
                             + closestObject->getDiffuseAndSpecularColor(currentIntersectionPoint, lights, objects, &reflected)) 
                             * closestObject->coEfficients[REFLECTION];
