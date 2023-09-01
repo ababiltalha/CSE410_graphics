@@ -99,6 +99,37 @@ public:
             return -1;
         }
     }
+
+    virtual Point normalAt(Point point){
+        // Bottom face
+        if (point.z == lowest.z){
+            return Point(0, 0, -1);
+        }
+
+        // Triangles
+        Point a = lowest;
+        Point b = lowest + Point(width, 0, 0);
+        Point c = lowest + Point(width, width, 0);
+        Point d = lowest + Point(0, width, 0);
+        Point e = lowest + Point(width/2, width/2, height);
+
+        Triangle tri1(a, b, e);
+        Triangle tri2(b, c, e);
+        Triangle tri3(c, d, e);
+        Triangle tri4(d, a, e);
+
+        if (tri1.isInside(point)){
+            return tri1.normalAt(point);
+        } else if (tri2.isInside(point)){
+            return tri2.normalAt(point);
+        } else if (tri3.isInside(point)){
+            return tri3.normalAt(point);
+        } else if (tri4.isInside(point)){
+            return tri4.normalAt(point);
+        }
+        std::cout << "Error: Pyramid normalAt" << std::endl;
+        return Point(0, 0, 0);
+    }
 };
 
 

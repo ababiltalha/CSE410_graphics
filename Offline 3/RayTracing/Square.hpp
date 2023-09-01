@@ -3,7 +3,7 @@
 
 #include "Object.hpp"
 
-class Square : public Object
+class Square
 {
 public:
     Point lowerLeft, upperRight;

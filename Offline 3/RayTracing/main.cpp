@@ -17,18 +17,14 @@
 #define degToRad(x) (x * PI / 180.0)
 #define radToDeg(x) (x * 180.0 / PI)
 
-#define R 0
-#define G 1
-#define B 2
-
 #define AMBIENT 0
 #define DIFFUSE 1
 #define SPECULAR 2
 #define REFLECTION 3
 
-
-
 using namespace std;
+
+string fileName = "description-2.txt";
 
 Point pos, u, r, l;
 double near, far, fovY, aspectRatio, fovX;
@@ -36,10 +32,11 @@ int recursionLevel, numberOfPixels;
 Checkerboard checkerboard;
 int numberOfObjects;
 vector<Object*> objects;
+vector<LightSource*> lights;
 int numberOfNormalLights;
-vector<NormalLight> normalLights;
+vector<NormalLight*> normalLights;
 int numberOfSpotLights;
-vector<SpotLight> spotLights;
+vector<SpotLight*> spotLights;
 double nearHeight, nearWidth;
 
 int windowWidth = 800;
@@ -114,24 +111,29 @@ void inputDescription(string fileName) {
         }
     }
 
+    objects.push_back(&checkerboard);
+
     fin >> numberOfNormalLights;
     for (int i = 0; i < numberOfNormalLights; i++)
     {
-        NormalLight normalLight;
-        fin >> normalLight.position.x >> normalLight.position.y >> normalLight.position.z;
-        fin >> normalLight.falloff;
+        NormalLight* normalLight = new NormalLight();
+        fin >> normalLight->position.x >> normalLight->position.y >> normalLight->position.z;
+        fin >> normalLight->falloff;
         normalLights.push_back(normalLight);
+        lights.push_back(normalLight);
     }
 
     fin >> numberOfSpotLights;
     for (int i = 0; i < numberOfSpotLights; i++)
     {
-        SpotLight spotLight;
-        fin >> spotLight.position.x >> spotLight.position.y >> spotLight.position.z;
-        fin >> spotLight.falloff;
-        fin >> spotLight.direction.x >> spotLight.direction.y >> spotLight.direction.z;
-        fin >> spotLight.cutoffAngle;
+        SpotLight* spotLight = new SpotLight();
+        fin >> spotLight->position.x >> spotLight->position.y >> spotLight->position.z;
+        fin >> spotLight->falloff;
+        fin >> spotLight->direction.x >> spotLight->direction.y >> spotLight->direction.z;
+        fin >> spotLight->cutoffAngle;
+        spotLight->direction.normalize();
         spotLights.push_back(spotLight);
+        lights.push_back(spotLight);
     }
 
     fin.close();
@@ -145,17 +147,8 @@ void inputDescription(string fileName) {
 }
 
 void debugInput(){
-    // print details of all object
-    // for (const auto object : objects) {
-    //     cout << "Object: " << endl;
-    //     cout << "Color: " << object->color[R] << " " << object->color[G] << " " << object->color[B] << endl;
-    //     cout << "Co-efficients: " << object->coEfficients[AMBIENT] << " " << object->coEfficients[DIFFUSE] << " " << object->coEfficients[SPECULAR] << " " << object->coEfficients[REFLECTION] << endl;
-    //     cout << "Shininess: " << object->shininess << endl;
-    //     cout << endl;
-    // }
-    cout << fovX << " " << fovY << endl;
+    cout << "recursion level" << recursionLevel << endl;
 }
-
 
 /* Initialize OpenGL Graphics */
 void initGL() {
@@ -186,8 +179,8 @@ void drawAxes() {
 }
 
 void setCamera(){
-    pos.x=0;    pos.y=-100;    pos.z=40;
-    l.x=0;      l.y=50;      l.z=-10;
+    pos.x=0;    pos.y=-60;    pos.z=40;
+    l.x=0;      l.y=1;      l.z=0;
     l.normalize();
     // cout << l.x << " " << l.y << " " << l.z << endl;
     r.x=1;      r.y=0;      r.z=0;
@@ -215,18 +208,14 @@ void capture(){
             pixel = topLeft + r * dw * i - u * dh * j;
             Ray ray(pixel, pixel - pos);
             double tMin = INT_MAX;
-            // checkerboard floor intersect
-            double t = checkerboard.intersect(&ray);
-            if (t > 0 && t < tMin && t < far) {
-                tMin = t;
-                Color color = checkerboard.getColor(ray.intersectionPoint);
-                image.set_pixel(i, j, color.r * 255, color.g * 255, color.b * 255);
-            }
             for (const auto object : objects) {
                 double t = object->intersect(&ray);
                 if (t > 0 && t < tMin && t < far) {
                     tMin = t;
-                    Color color = object->getColor(ray.intersectionPoint);
+                    Color color = object->getAmbientColor(ray.intersectionPoint)
+                        + object->getDiffuseAndSpecularColor(ray.intersectionPoint, lights, objects, &ray)
+                        + object->getReflectedColor(ray.intersectionPoint, lights, objects, &ray, recursionLevel);
+                    color.check();
                     image.set_pixel(i, j, color.r * 255, color.g * 255, color.b * 255);
                 }
             }
@@ -269,6 +258,11 @@ void display() {
 
     for (const auto object : objects) {
         object->draw();
+    }
+
+    // draw all the lights from the lights vector
+    for (const auto& light : lights) {
+        light->draw();
     }
 
     glutSwapBuffers();  // Render now
@@ -433,8 +427,8 @@ void clearMemory(){
 
 int main(int argc, char** argv)
 {
-    inputDescription("description.txt");
-    // debugInput();
+    inputDescription(fileName);
+    debugInput();
     setCamera();
 
     glutInit(&argc, argv);                  // Initialize GLUT

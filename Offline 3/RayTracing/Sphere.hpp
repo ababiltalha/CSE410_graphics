@@ -2,6 +2,7 @@
 #define SPHERE_HPP
 
 #include "Object.hpp"
+#include "Point.hpp"
 
 class Sphere : public Object {
 public:
@@ -46,6 +47,13 @@ public:
         }
         ray->intersectionPoint = ray->start + ray->direction * std::min(t1, t2);
         return std::min(t1, t2);
+    }
+
+    virtual Point normalAt(Point point){
+        // find normal at point on sphere surface
+        Point normal = point - center;
+        normal.normalize();
+        return normal;
     }
 };
 

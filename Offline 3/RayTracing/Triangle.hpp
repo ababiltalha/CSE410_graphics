@@ -25,7 +25,7 @@ public:
 
 };
 
-class Triangle : public Object
+class Triangle
 {
 public:
     Point a, b, c;
@@ -55,6 +55,33 @@ public:
             return -1;
         }
     }
+
+    virtual Point normalAt(Point point){
+        // find normal at point on triangle surface
+        Point normal = (b - a).cross(c - a);
+        normal.normalize();
+        return normal;
+    }
+
+    bool isInside(Point point){
+        Point ca = c - a;
+        Point ba = b - a;
+        Point pa = point - a;
+
+        double dot00 = ca.dot(ca);
+        double dot01 = ca.dot(ba);
+        double dot02 = ca.dot(pa);
+        double dot11 = ba.dot(ba);
+        double dot12 = ba.dot(pa);
+
+        double denom = dot00 * dot11 - dot01 * dot01;
+
+        double u = (dot11 * dot02 - dot01 * dot12) / denom;
+        double v = (dot00 * dot12 - dot01 * dot02) / denom;
+
+        return (u >= 0) && (v >= 0) && (u + v <= 1);
+    }
+
 
 
 

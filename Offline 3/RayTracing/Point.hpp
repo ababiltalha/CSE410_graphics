@@ -41,6 +41,16 @@ public:
         y /= d;
         z /= d;
     }
+
+    double distance(const Point &p) const {
+        return sqrt((x - p.x) * (x - p.x) +
+                    (y - p.y) * (y - p.y) +
+                    (z - p.z) * (z - p.z));
+    }
+
+    double length() const {
+        return sqrt(x * x + y * y + z * z);
+    }
 };
 
 #endif // POINT_HPP

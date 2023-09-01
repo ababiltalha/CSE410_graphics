@@ -113,6 +113,30 @@ public:
             return -1;
         }
     }
+
+    virtual Point normalAt(Point point){
+        // find normal at point on cube surface
+        if (point.z == bottomLowerLeft.z){
+            return Point(0, 0, -1);
+        }
+        if (point.z == bottomLowerLeft.z + edge){
+            return Point(0, 0, 1);
+        }
+        if (point.x == bottomLowerLeft.x){
+            return Point(-1, 0, 0);
+        }
+        if (point.x == bottomLowerLeft.x + edge){
+            return Point(1, 0, 0);
+        }
+        if (point.y == bottomLowerLeft.y){
+            return Point(0, -1, 0);
+        }
+        if (point.y == bottomLowerLeft.y + edge){
+            return Point(0, 1, 0);
+        }
+        // std::cout << "Error: Point not on cube surface" << std::endl;
+        return Point(0, 0, 0);
+    }
 };
 
 #endif // CUBE_HPP

@@ -12,7 +12,7 @@ public:
     Ray(Point start, Point dir){
         this->start = start;
         this->direction = dir;
-        dir.normalize();
+        this->direction.normalize();
     }
 
     void setStart(Point start){

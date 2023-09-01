@@ -10,7 +10,7 @@ public:
     int windowHeight;
 
     Checkerboard(){
-        this->coEfficients[2] = 0; // no specular reflection
+        this->coEfficients[SPECULAR] = 0; // no specular reflection
     }
 
     virtual void drawBoard(int windowWidth, int windowHeight){
@@ -51,15 +51,21 @@ public:
         return t;
     }
 
-    virtual Color getColor(Point intersectionPoint){
+    Color getColor(Point intersectionPoint){
         int i = ceil(intersectionPoint.x / cellWidth);
         int j = ceil(intersectionPoint.y / cellWidth);
         if ((i + j) % 2) {
-            return Color(0, 0, 0) * coEfficients[AMBIENT];
+            return Color(0, 0, 0);
         } else {
-            return Color(1, 1, 1) * coEfficients[AMBIENT];
+            return Color(1, 1, 1);
         }
     }
+
+    Point normalAt(Point point){
+        //? what if camera is under the checkerboard
+        return Point(0, 0, 1);
+    }
+
 };
 
 #endif // CHECKERBOARD_HPP
